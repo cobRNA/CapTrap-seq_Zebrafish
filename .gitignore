@@ -1,0 +1,9 @@
+# Rproject related files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+CapTrap-seq_Zebrafish.Rproj
+
+# Temporary files and directories
+*.temp
