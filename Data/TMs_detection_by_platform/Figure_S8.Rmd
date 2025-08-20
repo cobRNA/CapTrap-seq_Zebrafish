@@ -1,0 +1,99 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗ █████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝██╔══██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗╚█████╔╝
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║██╔══██╗
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║╚█████╔╝
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝ ╚════╝ 
+
+# Prepare environment
+```{bash, engine.opts='-l'}
+##########################################################################################
+# Create directory tree
+##########################################################################################
+mkdir -p ../../Plots/
+```
+
+# Load R libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2,
+               scales,
+               dplyr,
+               tidyr,
+               stringr,
+               ggvenn,
+               ggh4x)
+```
+
+# Load the data
+```{r}
+# Clean the env
+rm(list = ls())
+
+###############################################################
+##### Load and transform preprocessed data
+###############################################################
+df_venn_ALL <- read.table("results_ALL.tsv", header = T, as.is = T, sep = "\t") %>% 
+  # Adjust for Venn diagram
+  mutate(CapTrapSeq=ifelse((CapTrapSeq=="-"), FALSE, TRUE)) %>% 
+  mutate(TSO=ifelse((TSO=="-"), FALSE, TRUE)) %>%
+  mutate(CapTrapSeqSS500=ifelse((CapTrapSeqSS500=="-"), FALSE, TRUE))
+
+df_venn_FL <- read.table("results_FL.tsv", header = T, as.is = T, sep = "\t") %>% 
+  # Adjust for Venn diagram
+  mutate(CapTrapSeq=ifelse((CapTrapSeq=="-"), FALSE, TRUE)) %>% 
+  mutate(TSO=ifelse((TSO=="-"), FALSE, TRUE)) %>%
+  mutate(CapTrapSeqSS500=ifelse((CapTrapSeqSS500=="-"), FALSE, TRUE))
+
+# Preview
+df_venn_ALL
+df_venn_FL
+
+# Prepare palette
+cbPalette <- c("#fdb7b9", "#f8e4db", "#badfd7")
+```
+
+# Plot Venn diagrams (with facet_grid2)
+```{r}
+df_venn_ALL  %>%
+  mutate(endSupport = "All") %>% 
+  bind_rows(df_venn_FL %>% 
+              mutate(endSupport = "Full-length")) %>% 
+# Plot
+  ggplot() +
+  geom_venn(aes(A = `CapTrapSeq`, B = `TSO`, C = `CapTrapSeqSS500`),
+            fill_color = cbPalette,
+            fill_alpha = 1.0,
+            text_size = 1.8,
+            stroke_size = 0.8,
+            set_name_size = 3.5) +
+  coord_fixed() +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title = element_blank(),
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 14),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 16)) +
+  facet_grid2(cols=vars(endSupport),
+              rows=vars(factor(sample, levels = c("Heart", "Testis", "2-4Cell", "28hpf")))) -> venn_facet_plot
+
+# Preview plot
+venn_facet_plot
+```
+
+# Save plot
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S8.pdf", bg = "white", width = 7, height = 14)
+venn_facet_plot
+```
