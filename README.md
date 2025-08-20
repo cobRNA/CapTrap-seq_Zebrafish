@@ -1,10 +1,14 @@
 # CapTrap-seq: Advancing Zebrafish Transcriptomic Research Through High-Fidelity Full-Length RNA Sequencing
 
-Monika Kwiatkowska`<sup>`1,a`</sup>`, Marta Blangiewicz`<sup>`1,b`</sup>`, Tomasz Mądry`<sup>`1,c`</sup>`, Sílvia Carbonell-Sala `<sup>`2,d`</sup>`, Roderic Guigó`<sup>`2,3,e`</sup>`, Barbara Uszczynska-Ratajczak`<sup>`1,*,f`</sup>`
+Monika Kwiatkowska<sup>1</sup>, Marta Blangiewicz<sup>1</sup>, Tomasz Mądry<sup>1</sup>, Sílvia Carbonell-Sala <sup>2</sup>, Roderic Guigó<sup>2,3</sup>, Barbara Uszczynska-Ratajczak<sup>1,*</sup>
 
-Tomasz Mądry`<sup>`4`</sup>`,
+    1. Department of Computational Biology of Noncoding RNA, Institute of Bioorganic Chemistry, Polish Academy of Sciences, Noskowskiego 12/14, 61-704 Poznan, Poland.
+    2. Centre for Genomic Regulation (CRG), The Barcelona Institute of Science and Technology, Dr. Aiguader 88, Barcelona 08003, Catalonia, Spain.
+    3. Departament de Ciències Experimentals i de la Salut, Universitat Pompeu Fabra (UPF), Barcelona 08002, Catalonia, Spain.
 
-Repository contains scripts required to
+\* Corresponding author(s).
+E-mail: barbara.uszczynska@gmail.com (Uszczynska-Ratajczak B).
+
 
 ## Abstract
 
