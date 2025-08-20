@@ -1,0 +1,304 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗██╗  ██╗     █████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝██║  ██║    ██╔══██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗███████║    ███████║
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║╚════██║    ██╔══██║
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║     ██║    ██║  ██║
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝     ╚═╝    ╚═╝  ╚═╝
+                                                                             
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗██╗  ██╗    ██████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝██║  ██║    ██╔══██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗███████║    ██████╔╝
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║╚════██║    ██╔══██╗
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║     ██║    ██████╔╝
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝     ╚═╝    ╚═════╝ 
+                                                                             
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗███████╗    ██████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝╚════██║    ██╔══██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗    ██╔╝    ██████╔╝
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║   ██╔╝     ██╔══██╗
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║   ██║      ██████╔╝
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝   ╚═╝      ╚═════╝ 
+                                                                                 
+# Load R libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2,
+               scales,
+               dplyr,
+               tidyr,
+               ggh4x,
+               stringr)
+```
+
+# Process and plot the data
+```{r}
+# Clean the env
+rm(list = ls())
+
+###########################################
+### detection_plot: Pre-capture | spliced + unspliced
+###########################################
+# Set color palette
+cbPalette_detected <- c("#588157", "#f4a261", "#a39b8b", "#b08968", "#415a77", "#0a9396")
+
+# Read data from file
+read.table("annotation_detection_allbio.tsv", header = T, as.is = T, sep = "\t") %>% 
+  filter(capture_status == "Pre") %>% 
+  select(!c("ensembl_transcripts")) %>% 
+  # Rename for consistency
+  mutate(platform = ifelse((platform == "Cap-Trap"), "CapTrap-seq SS500", platform)) %>% 
+  mutate(platform = ifelse((platform == "noSS500"), "CapTrap-seq", platform)) %>%
+  # Sum up spliced and unspliced
+  select(sample, ensembl_genes_tmerged_loci,
+         platform, splice_status,
+         ensembl_genes, detected_genes,
+         detected_genes_ensembl_isoforms,
+         detected_genes_sample_isoforms,
+         total_genes, isoforms,
+         detected_ensembl_transcripts, detected_sample_transcripts,
+         total_transcripts) %>% 
+  summarise(.by = c(sample, platform),
+            ensembl_genes=sum(ensembl_genes),
+            detected_genes=sum(detected_genes),
+            total_genes=sum(total_genes),
+            detected_ensembl_transcripts=sum(detected_ensembl_transcripts),
+            detected_sample_transcripts=sum(detected_sample_transcripts),
+            total_transcripts=sum(total_transcripts),
+            ensembl_genes_tmerged_loci=sum(ensembl_genes_tmerged_loci)) %>% 
+  # Recalculate isoforms
+  mutate(isoforms = total_transcripts/total_genes) %>% 
+  mutate(detected_genes_ensembl_isoforms = detected_ensembl_transcripts/detected_genes) %>% 
+  mutate(detected_genes_sample_isoforms = detected_sample_transcripts/total_genes) %>% 
+  # Scale isoforms
+  mutate(isoforms = isoforms * 1000) %>% 
+  mutate(detected_genes_ensembl_isoforms = detected_genes_ensembl_isoforms * 1000) %>%
+  mutate(detected_genes_sample_isoforms = detected_genes_sample_isoforms * 1000) %>%
+  pivot_longer(cols = c("ensembl_genes", "detected_genes", "detected_genes_ensembl_isoforms", "detected_genes_sample_isoforms", "total_genes", "isoforms"),
+               names_to = "gene_category",
+               values_to = "count") %>%
+  mutate(gene_category = str_replace_all(gene_category, "detected_genes_", "")) %>% 
+  mutate(gene_category = str_replace_all(gene_category, "_", " ")) -> detection_pre_allbio_allspliced_plot_input
+
+###########################################
+### detection_plot: Pre-capture | spliced
+###########################################
+# Set color palette
+cbPalette_detected <- c("#588157", "#f4a261", "#a39b8b", "#b08968", "#415a77", "#0a9396")
+
+# Read data from file
+read.table("annotation_detection_allbio.tsv", header = T, as.is = T, sep = "\t") %>% 
+  filter(capture_status == "Pre") %>% 
+  filter(splice_status == "spliced") %>% 
+  select(!c("ensembl_transcripts", "total_transcripts")) %>% 
+  # Rename for consistency
+  mutate(platform = ifelse((platform == "Cap-Trap"), "CapTrap-seq SS500", platform)) %>% 
+  mutate(platform = ifelse((platform == "noSS500"), "CapTrap-seq", platform)) %>%
+  # Scale isoforms
+  mutate(isoforms = isoforms * 1000) %>% 
+  mutate(detected_genes_ensembl_isoforms = detected_genes_ensembl_isoforms * 1000) %>%
+  mutate(detected_genes_sample_isoforms = detected_genes_sample_isoforms * 1000) %>%
+  # Include alpha values
+  #mutate(alpha_values = ifelse((splice_status=="spliced"), 0.8, 1)) %>% 
+  pivot_longer(cols = c("ensembl_genes", "detected_genes", "detected_genes_ensembl_isoforms", "detected_genes_sample_isoforms", "total_genes", "isoforms"),
+               names_to = "gene_category",
+               values_to = "count") %>%
+  mutate(gene_category = str_replace_all(gene_category, "detected_genes_", "")) %>% 
+  mutate(gene_category = str_replace_all(gene_category, "_", " ")) -> detection_pre_allbio_spliced_plot_input
+
+###########################################
+### detection_plot: Pre-capture | isoforms + genes
+###########################################
+# Set color palette
+cbPalette_detected <- c("#588157", "#f4a261", "#a39b8b", "#b08968", "#415a77", "#0a9396")
+# Isoforms
+# Plot cap-trap-seq : TSO
+detection_pre_allbio_allspliced_plot_input %>% 
+  filter(platform != c("CapTrap-seq SS500")) %>% 
+  select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+  mutate(splice_status = "All") %>% 
+  bind_rows(detection_pre_allbio_spliced_plot_input %>% 
+              filter(platform != c("CapTrap-seq SS500")) %>% 
+              select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+              mutate(splice_status = "Spliced")) %>% 
+  filter(str_detect(gene_category, "isoforms")) %>%
+  mutate(gene_category = str_replace_all(gene_category, " ", "\n")) %>% 
+  mutate(count = count/1000) %>% 
+  ggplot(aes(x=factor(gene_category, levels=c("ensembl\ngenes", "detected\ngenes", "ensembl\nisoforms", "sample\nisoforms", "total\ngenes", "isoforms")),
+             y=count,
+             fill=splice_status)) +
+  geom_bar(stat = "identity", position = "dodge2") +
+  geom_text(aes(label = ifelse((str_detect(gene_category, "isoforms")), paste(round(count, 2)), ifelse((str_detect(gene_category, "ensembl\ngenes")), paste0(scales::comma(round(count, 0)), "\n(", scales::comma(round(ensembl_genes_tmerged_loci, 0)), ")"), scales::comma(round(count, 0)))),
+                vjust=ifelse((count > max(count)*0.9), 1.0, -0.3)),
+            position = position_dodge2(width = 0.9),
+            size = 2.0) +
+  scale_fill_manual(values = cbPalette_detected) +
+  theme_bw() +
+  ggtitle("all biotypes, isoforms, Pre-capture") +
+  ylab("isoforms") +
+  theme(axis.text.x = element_text(size = 10, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 10,  colour = "black"),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.position = "top",
+        axis.title.x = element_blank(),
+        axis.title.y =  element_blank(), #element_text(size = 14),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 10)) +
+  facet_grid2(cols = vars(platform),
+              rows = vars(factor(sample, levels=c("Heart", "Testis", "2-4Cell", "28hpf")))) -> detection_pre_allbio_isoforms_cap_tso_plot
+
+# Plot cap-trap-seq : CapTrap-seq ss500
+detection_pre_allbio_allspliced_plot_input %>% 
+  filter(platform != c("TSO")) %>% 
+  select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+  mutate(splice_status = "All") %>% 
+  bind_rows(detection_pre_allbio_spliced_plot_input %>% 
+              filter(platform != c("TSO")) %>% 
+              select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+              mutate(splice_status = "Spliced")) %>% 
+  filter(str_detect(gene_category, "isoforms")) %>%
+  mutate(gene_category = str_replace_all(gene_category, " ", "\n")) %>% 
+  mutate(count = count/1000) %>% 
+  ggplot(aes(x=factor(gene_category, levels=c("ensembl\ngenes", "detected\ngenes", "ensembl\nisoforms", "sample\nisoforms", "total\ngenes", "isoforms")),
+             y=count,
+             fill=splice_status)) +
+  geom_bar(stat = "identity", position = "dodge2") +
+  geom_text(aes(label = ifelse((str_detect(gene_category, "isoforms")), paste(round(count, 2)), ifelse((str_detect(gene_category, "ensembl\ngenes")), paste0(scales::comma(round(count, 0)), "\n(", scales::comma(round(ensembl_genes_tmerged_loci, 0)), ")"), scales::comma(round(count, 0)))),
+                vjust=ifelse((count > max(count)*0.9), 1.0, -0.3)),
+            position = position_dodge2(width = 0.9),
+            size = 2.0) +
+  scale_fill_manual(values = cbPalette_detected) +
+  theme_bw() +
+  ggtitle("all biotypes, isoforms, Pre-capture") +
+  ylab("isoforms") +
+  theme(axis.text.x = element_text(size = 10, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 10,  colour = "black"),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.position = "top",
+        axis.title.x = element_blank(),
+        axis.title.y =  element_blank(), #element_text(size = 14),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 10)) +
+  facet_grid2(cols = vars(platform),
+              rows = vars(factor(sample, levels=c("Heart", "Testis", "2-4Cell", "28hpf")))) -> detection_pre_allbio_isoforms_cap_ss500_plot
+
+####
+# Genes
+# Plot cap-trap-seq : TSO
+detection_pre_allbio_allspliced_plot_input %>% 
+  filter(platform != c("CapTrap-seq SS500")) %>% 
+  select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+  mutate(splice_status = "All") %>% 
+  bind_rows(detection_pre_allbio_spliced_plot_input %>% 
+              filter(platform != c("CapTrap-seq SS500")) %>% 
+              select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+              mutate(splice_status = "Spliced")) %>% 
+  filter(str_detect(gene_category, "genes")) %>%
+  mutate(gene_category = str_replace_all(gene_category, " ", "\n")) %>% 
+  ggplot(aes(x=factor(gene_category, levels=c("ensembl\ngenes", "detected\ngenes", "ensembl\nisoforms", "sample\nisoforms", "total\ngenes", "isoforms")),
+             y=count,
+             fill=splice_status)) +
+  geom_bar(stat = "identity", position = "dodge2") +
+  geom_text(aes(label = ifelse((str_detect(gene_category, "isoforms")), paste(round(count, 2)), ifelse((str_detect(gene_category, "ensembl\ngenes")), paste0(scales::comma(round(count, 0)), "\n(", scales::comma(round(ensembl_genes_tmerged_loci, 0)), ")"), scales::comma(round(count, 0)))),
+                vjust=ifelse((count > max(count)*0.8), 1.0, -0.3)),
+            position = position_dodge2(width = 0.9),
+            size = 2.0) +
+  scale_fill_manual(values = cbPalette_detected) +
+  theme_bw() +
+  ggtitle("all biotypes, genes, Pre-capture") +
+  ylab("count") +
+  theme(axis.text.x = element_text(size = 10, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 10,  colour = "black"),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.position = "top",
+        axis.title.x = element_blank(),
+        axis.title.y =  element_blank(), #element_text(size = 14),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 10)) +
+  facet_grid2(cols = vars(platform),
+              rows = vars(factor(sample, levels=c("Heart", "Testis", "2-4Cell", "28hpf")))) -> detection_pre_allbio_genes_cap_tso_plot
+
+# Plot cap-trap-seq : CapTrap-seq SS500
+detection_pre_allbio_allspliced_plot_input %>% 
+  filter(platform != c("TSO")) %>% 
+  select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+  mutate(splice_status = "All") %>% 
+  bind_rows(detection_pre_allbio_spliced_plot_input %>% 
+              filter(platform != c("TSO")) %>% 
+              select(platform, gene_category, count, ensembl_genes_tmerged_loci, sample) %>% 
+              mutate(splice_status = "Spliced")) %>% 
+  filter(str_detect(gene_category, "genes")) %>%
+  mutate(gene_category = str_replace_all(gene_category, " ", "\n")) %>% 
+  ggplot(aes(x=factor(gene_category, levels=c("ensembl\ngenes", "detected\ngenes", "ensembl\nisoforms", "sample\nisoforms", "total\ngenes", "isoforms")),
+             y=count,
+             fill=splice_status)) +
+  geom_bar(stat = "identity", position = "dodge2") +
+  geom_text(aes(label = ifelse((str_detect(gene_category, "isoforms")), paste(round(count, 2)), ifelse((str_detect(gene_category, "ensembl\ngenes")), paste0(scales::comma(round(count, 0)), "\n(", scales::comma(round(ensembl_genes_tmerged_loci, 0)), ")"), scales::comma(round(count, 0)))),
+                vjust=ifelse((count > max(count)*0.8), 1.0, -0.3)),
+            position = position_dodge2(width = 0.9),
+            size = 2.0) +
+  scale_fill_manual(values = cbPalette_detected) +
+  theme_bw() +
+  ggtitle("all biotypes, genes, Pre-capture") +
+  ylab("count") +
+  theme(axis.text.x = element_text(size = 10, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 10,  colour = "black"),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.position = "top",
+        axis.title.x = element_blank(),
+        axis.title.y =  element_blank(), #element_text(size = 14),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 10)) +
+  facet_grid2(cols = vars(platform),
+              rows = vars(factor(sample, levels=c("Heart", "Testis", "2-4Cell", "28hpf")))) -> detection_pre_allbio_genes_cap_ss500_plot
+
+
+# Display plot input
+detection_pre_allbio_allspliced_plot_input # Figures: S4B + S4A + S7B_2 + S7B_1
+
+# Preview plot
+detection_pre_allbio_isoforms_cap_tso_plot # Figure S4B
+detection_pre_allbio_genes_cap_tso_plot # Figure S4A
+detection_pre_allbio_isoforms_cap_ss500_plot # Figure S7B_2
+detection_pre_allbio_genes_cap_ss500_plot # Figure S7B_1
+```
+
+# Save plots
+## Genes captrap-seq : TSO
+```{r}
+# Save plot captrap-seq : TSO
+pdf("../../Plots/Figure_S4A.pdf", bg = "white", width = 5, height = 5)
+detection_pre_allbio_genes_cap_tso_plot
+```
+
+## Isoforms captrap-seq : TSO
+```{r}
+# Save plot captrap-seq : TSO
+pdf("../../Plots/Figure_S4B.pdf", bg = "white", width = 5, height = 5)
+detection_pre_allbio_isoforms_cap_tso_plot
+```
+
+## Genes captrap-seq : captrap-seq ss500
+```{r}
+# Save plot captrap-seq : captrap-seq ss500
+pdf("../../Plots/Figure_S7B_1.pdf", bg = "white", width = 5, height = 5)
+detection_pre_allbio_genes_cap_ss500_plot
+```
+
+## Isoforms captrap-seq : captrap-seq ss500
+```{r}
+# Save plot captrap-seq : TSO
+pdf("../../Plots/Figure_S7B_2.pdf", bg = "white", width = 5, height = 5)
+detection_pre_allbio_isoforms_cap_ss500_plot
+```
