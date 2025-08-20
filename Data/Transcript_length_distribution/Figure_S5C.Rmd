@@ -1,0 +1,152 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗███████╗ ██████╗
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝██╔════╝██╔════╝
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗███████╗██║     
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║╚════██║██║     
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║███████║╚██████╗
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝╚══════╝ ╚═════╝
+
+# Prepare environment
+```{bash, engine.opts='-l'}
+##########################################################################################
+# Remove files from previous run
+##########################################################################################
+rm -r .temp/
+rm ensembl.v104_pc_transcript_lengths.tsv
+rm ensembl.v104_lncRNA_transcript_lengths.tsv
+
+##########################################################################################
+# Create directory tree
+##########################################################################################
+mkdir .temp/
+mkdir -p ../../Plots/
+
+##########################################################################################
+# Handle errors
+##########################################################################################
+set -e          # exit on any non-0 exit status
+set -o pipefail # exit on any non-0 exit status in pipe
+
+##########################################################################################
+# Change directory
+##########################################################################################
+cd .temp/
+
+##########################################################################################
+# Download data
+##########################################################################################
+# Fish
+wget --no-verbose "https://ftp.ensembl.org/pub/release-104/gtf/danio_rerio/Danio_rerio.GRCz11.104.chr.gtf.gz"
+
+##########################################################################################
+# Process data
+##########################################################################################
+# Ensembl.v104 annotation 
+##########################################################################################
+# Reformat Ensembl.v104 annotation
+zcat Danio_rerio.GRCz11.104.chr.gtf.gz | ../../../Utils/skipcomments | sed 's/^/chr/' | sed 's/chrMT/chrM/g' | awk '$3=="exon"' | sed 's/gene_biotype/gene_type/g' | sed 's/transcript_biotype/transcript_type/g' | ../../../Utils/gff2gff.pl - | gzip > Danio_rerio.GRCz11.104.chr_formatted.gtf.gz
+# Extract Ensembl.v104 annotation lncRNA slice
+zcat Danio_rerio.GRCz11.104.chr.gtf.gz | awk '$3=="gene"' | grep -Ew "antisense|lincRNA|processed_transcript|sense_intronic|sense_overlapping" | ../../../Utils/extract.gtf.tags.sh - gene_id | grep "\S"  > ensembl104_GRCz11_lncRNA_gene.ids
+zcat Danio_rerio.GRCz11.104.chr.gtf.gz | grep -Fwf ensembl104_GRCz11_lncRNA_gene.ids | awk -F"\t" '{OFS=FS} $1="chr"$1' | sed 's/chrMT/chrM/g' | awk '$1 ~ /^chr[0-9XYM]{1,2}$/ {print $0}' | ../../../Utils/gff2gff.pl - | grep "\S" | gzip > ensembl104_GRCz11_lncRNA.gtf.gz
+# Extract pc (mRNA) transcript lengths
+zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz| grep -Fw "transcript_type \"protein_coding\";" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/gff2bed_full.pl - | awk '$10>1' | ../../../Utils/bed12ToTranscriptLength.pl - > ../ensembl.v104_pc_transcript_lengths.tsv
+# Extract lncRNA transcript lengths
+zcat ensembl104_GRCz11_lncRNA.gtf.gz | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/gff2bed_full.pl - | awk '$10>1' | ../../../Utils/bed12ToTranscriptLength.pl - > ../ensembl.v104_lncRNA_transcript_lengths.tsv
+
+# Report completeness
+echo ">>>> COMPLETED!"
+
+# NOTE:
+# Don't worry about "Line 1 skipped (contains no 'transcript_id' attribute." error message.
+# It's completely normal and intended ;).
+```
+
+# Load R libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2,
+               scales,
+               dplyr)
+```
+
+# Transform and plot the Ensembl.v104 annotation data
+```{r}
+# Clean the env
+rm(list = ls())
+
+#####################################################################
+### Load data 
+#####################################################################
+# Load mRNA and lncRNA for zebrafish
+df_zebrafish <- read.table("ensembl.v104_lncRNA_transcript_lengths.tsv", header = F, as.is = T, sep = "\t") %>%
+  mutate("type" = "lncRNA") %>% 
+  bind_rows(read.table("ensembl.v104_pc_transcript_lengths.tsv", header = F, as.is = T, sep = "\t") %>% 
+              mutate("type" = "mRNA")) %>%
+  rename("transcript_id" = "V1") %>% 
+  rename("length" = "V2") %>%
+  mutate(organism = "Zebrafish")
+
+# Preview data
+df_zebrafish
+
+#####################################################################
+### Plots
+#####################################################################
+
+### mRNA + lncRNA for Zebrafish only
+#####################################################################
+# Calculate median values
+zebrafish_mu <- df_zebrafish %>% 
+  summarise(.by="type",
+            grp.median=median(length),
+            grp.total=n(),
+            grp.500minus=length(transcript_id[length<500]),
+            grp.500plus=length(transcript_id[length>=500]),
+            grp.5kplus=length(transcript_id[length>5000]))
+
+
+# Prepare palette
+palette <- c('mRNA' = '#3466a5', 'lncRNA' = '#3466a5')
+
+# Plot
+df_zebrafish %>%
+  ggplot(aes(x=length, fill=type, color=organism)) +
+  geom_histogram(binwidth=200, position="identity", alpha=0.8) +
+  geom_vline(data=zebrafish_mu, aes(xintercept=grp.median, color=type),
+             linetype="dashed", size=1) +
+  geom_vline(xintercept=500, colour='black', size=1) +
+  geom_text(data = zebrafish_mu, aes(x = 3500, y = Inf, label = paste0("N = ", grp.total, "\n",
+                                                                       "median = ", round(grp.median, 1), "\n",
+                                                                       "<500 = ", grp.500minus, "\n",
+                                                                       ">=500 = ", grp.500plus, "\n",
+                                                                       ">5000 = ", grp.5kplus), color = type),
+            vjust = 1.1, hjust = 0, size = 3.5, fontface = "bold") +
+  scale_fill_manual(values = palette) +
+  scale_color_manual(values = c("#fe4e4e", "#fe4e4e", "#3466a5")) +
+  theme_bw() +
+  ggtitle("") + # Zebrafish mature RNA length distribution
+  ylab("Count") +
+  xlab("Zebrafish mature RNA length") +
+  coord_cartesian(xlim=c(0, 5000)) +
+  theme(axis.text.x = element_text(size = 10, colour = "black"),
+        axis.text.y = element_text(size = 10,  colour = "black"),
+        plot.title = element_text(size = 14, hjust = 0.5),
+        legend.text = element_text(size = 10),
+        legend.position = "none",
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 10)) +
+  facet_wrap(~ factor(type, levels = c("mRNA", "lncRNA")),
+             scales = "free_y") -> Z_lncRNA_and_mRNA_plot
+
+
+# Preview plot
+Z_lncRNA_and_mRNA_plot
+```
+
+# Save plot and input - Zebrafish mRNA + lncRNA
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S5C.pdf", bg = "white", width = 8, height = 4)
+Z_lncRNA_and_mRNA_plot
+```
