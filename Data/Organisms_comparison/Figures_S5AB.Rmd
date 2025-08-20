@@ -1,0 +1,308 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗███████╗     █████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝██╔════╝    ██╔══██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗███████╗    ███████║
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║╚════██║    ██╔══██║
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║███████║    ██║  ██║
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝╚══════╝    ╚═╝  ╚═╝
+                                                                             
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗███████╗    ██████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝██╔════╝    ██╔══██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗███████╗    ██████╔╝
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║╚════██║    ██╔══██╗
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║███████║    ██████╔╝
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝╚══════╝    ╚═════╝ 
+
+# Prepare environment
+```{bash, engine.opts='-l'}
+######################################################################################
+
+# Summary:
+##########################################################################################
+## Use Human, Mouse and Fish annotations to compare the mean number of
+## all, mRNA, lncRNA isoforms
+## 
+## 
+##
+## REQIUREMENTS:
+## 
+## 
+##########################################################################################
+
+##########################################################################################
+# Remove files from previous run
+##########################################################################################
+rm -r ./.temp/
+
+##########################################################################################
+# Create directory tree
+##########################################################################################
+mkdir ./.temp/
+mkdir -p ../../Plots/
+
+##########################################################################################
+# Handle errors
+##########################################################################################
+set -e          # exit on any non-0 exit status
+set -o pipefail # exit on any non-0 exit status in pipe
+
+##########################################################################################
+# Change directory
+##########################################################################################
+cd ./.temp/
+
+##########################################################################################
+# Download data
+##########################################################################################
+# Human
+wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.annotation.gtf.gz"
+wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.long_noncoding_RNAs.gtf.gz"
+# Mouse
+wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M36/gencode.vM36.annotation.gtf.gz"
+wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M36/gencode.vM36.long_noncoding_RNAs.gtf.gz"
+
+##########################################################################################
+# Processing
+##########################################################################################
+# Gencode.v47 annotation 
+##########################################################################################
+# all
+zcat gencode.v47.annotation.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_all_gene_transcript_ids.tsv
+# mRNA (protein coding)
+zcat gencode.v47.annotation.gtf.gz | awk '$3=="transcript"' | grep -Fw "transcript_type \"protein_coding\"" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_mRNA_gene_transcript_ids.tsv
+# lncRNA
+zcat gencode.v47.long_noncoding_RNAs.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_lncRNA_gene_transcript_ids.tsv
+
+# Gencode.vM36 annotation 
+##########################################################################################
+# all
+zcat gencode.vM36.annotation.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_all_gene_transcript_ids.tsv
+# mRNA (protein coding)
+zcat gencode.vM36.annotation.gtf.gz | awk '$3=="transcript"' | grep -Fw "transcript_type \"protein_coding\"" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_mRNA_gene_transcript_ids.tsv
+# lncRNA
+zcat gencode.vM36.long_noncoding_RNAs.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_lncRNA_gene_transcript_ids.tsv
+
+# Ensembl.v104 annotation 
+##########################################################################################
+# Reformat Ensembl.v104 annotation
+zcat ../../Source/Ensembl/Danio_rerio.GRCz11.104.chr.gtf.gz | ../../../Utils/skipcomments | sed 's/^/chr/' | sed 's/chrMT/chrM/g' | awk '$3=="transcript"' | sed 's/gene_biotype/gene_type/g' | sed 's/transcript_biotype/transcript_type/g' | ../../../Utils/gff2gff.pl - | gzip > Danio_rerio.GRCz11.104.chr_formatted.gtf.gz
+# all
+zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_all_gene_transcript_ids.tsv
+# Extract pc (mRNA)
+zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz | grep -Fw "transcript_type \"protein_coding\";" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_mRNA_gene_transcript_ids.tsv
+# Extract lncRNA
+zcat ../../lncRNA_catalogs/output/ensembl104_GRCz11_lncRNA.gtf.gz | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_lncRNA_gene_transcript_ids.tsv
+
+# Report completeness
+echo ">>> COMPLETADO!"
+```
+
+# Load R libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2,
+               scales,
+               dplyr,
+               ggh4x)
+```
+
+# Load transform and plot Ensembl.v104 annotation data
+```{r}
+# Clean the env
+rm(list = ls())
+
+#####################################################################
+### Load data
+#####################################################################
+# Ensembl.v104 annotation 
+## Load all
+df_ensembl_all <- read.table("./.temp/ensembl.v104_all_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "All") %>% 
+  mutate("organism" = "Zebrafish")
+         
+## Load protein coding (mRNA)
+df_ensembl_mRNA <- read.table("./.temp/ensembl.v104_mRNA_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "mRNA") %>% 
+  mutate("organism" = "Zebrafish")
+
+## load long non-coding (lncRNA)
+df_ensembl_lncRNA <- read.table("./.temp/ensembl.v104_lncRNA_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "lncRNA") %>% 
+  mutate("organism" = "Zebrafish")
+
+# Gencode v47 annotation 
+## Load all
+df_gen_v47_all <- read.table("./.temp/gen.v47_all_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "All") %>% 
+  mutate("organism" = "Human")
+
+## Load protein coding (mRNA)
+df_gen_v47_mRNA <- read.table("./.temp/gen.v47_mRNA_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "mRNA") %>% 
+  mutate("organism" = "Human")
+
+## load long non-coding (lncRNA)
+df_gen_v47_lncRNA <- read.table("./.temp/gen.v47_lncRNA_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "lncRNA") %>% 
+  mutate("organism" = "Human") 
+
+# Gencode vM36 annotation 
+## Load all
+df_gen_vM36_all <- read.table("./.temp/gen.vM36_all_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "All") %>% 
+  mutate("organism" = "Mouse")
+
+## Load protein coding (mRNA)
+df_gen_vM36_mRNA <- read.table("./.temp/gen.vM36_mRNA_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "mRNA") %>% 
+  mutate("organism" = "Mouse")
+
+## load long non-coding (lncRNA)
+df_gen_vM36_lncRNA <- read.table("./.temp/gen.vM36_lncRNA_gene_transcript_ids.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename("gene_id" = "V1") %>% 
+  rename("transcript_id" = "V2") %>% 
+  mutate("biotype" = "lncRNA") %>% 
+  mutate("organism" = "Mouse")
+
+
+# Join dataframes and transform
+df_full <- df_ensembl_all %>% 
+  bind_rows(df_ensembl_mRNA) %>% 
+  bind_rows(df_ensembl_lncRNA) %>% 
+  bind_rows(df_gen_v47_all) %>%
+  bind_rows(df_gen_v47_mRNA) %>% 
+  bind_rows(df_gen_v47_lncRNA) %>%
+  bind_rows(df_gen_vM36_all) %>% 
+  bind_rows(df_gen_vM36_mRNA) %>% 
+  bind_rows(df_gen_vM36_lncRNA) %>%
+  summarise(.by=c("gene_id", "biotype", "organism"),
+            isoforms=n()) %>% 
+  summarise(.by=c("isoforms", "biotype", "organism"),
+            count=n())
+
+# Preview
+df_full
+
+###############################
+### Isoforms
+###############################
+# Prepare palette
+#cbPalette <- c("#f6bd60", "#f7ede2", "#f5cac3", "#e29578", "#f28482", "#84a59d")
+#cbPalette <- c("#68c5db", "#f18f01", "#adcad6", "#99c24d", "#97d8c4", "#ee6352")
+#cbPalette <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b")
+cbPalette <- c("#d00000", "#f8961e", "#f9c74f", "#90be6d", "#4d908e", "#277da1")
+
+# Preapre plot input
+df_full %>% 
+  filter(isoforms < 6) %>% 
+  mutate(isoforms = as.character(isoforms)) %>% 
+  bind_rows(df_full %>% 
+              filter(isoforms >= 6) %>% 
+              summarise(.by = c("biotype", "organism"),
+                        count = sum(count)) %>% 
+              mutate(isoforms="6+")) -> df_isoforms_plot_input
+# Plot
+df_isoforms_plot_input %>% 
+  ggplot(aes(x = factor(biotype, levels = c("All", "mRNA", "lncRNA")),
+               y = count,
+               fill = isoforms)) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_text(aes(label = scales::comma(count)),
+            position = position_stack(vjust = .5),
+            size = 2.0) +
+  geom_text(aes(label = scales::comma(after_stat(y)), group = biotype), 
+            stat = 'summary', fun = sum, vjust = -0.5,
+            size = 2.5) +
+  scale_fill_manual(values = cbPalette) +
+  theme_bw() +
+  ggtitle("") +
+  scale_y_continuous(labels = scales::comma) +
+  ylab("Number of transcripts") +
+  guides(fill = guide_legend(nrow = 1)) +
+  theme(axis.text.x = element_text(size = 10, colour = "black"), # angle = 60, hjust = 1),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 10,  colour = "black"),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        #legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.position = "top",
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 10)) +
+  facet_wrap2(vars(organism)) -> isoforms_plot
+
+###############################
+### GENES
+###############################
+cbPalette_genes <- c("#68c5db", "#f18f01", "#99c24d")
+# Preapre plot input
+df_full %>% 
+  summarise(.by = c("biotype", "organism"),
+            count = sum(count)) -> df_genes_plot_input
+# Plot
+df_genes_plot_input %>% 
+  ggplot(aes(x = factor(biotype, levels = c("All", "mRNA", "lncRNA")),
+             y = count,
+             fill = organism)) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_text(aes(label = scales::comma(count)),
+            position = position_stack(vjust = .5),
+            size = 3.0) +
+  # geom_text(aes(label = after_stat(y), group = biotype), 
+  #           stat = 'summary', fun = sum, vjust = -0.5,
+  #           size = 2.5) +
+  scale_fill_manual(values = cbPalette_genes) +
+  theme_bw() +
+  ggtitle("") +
+  scale_y_continuous(labels = scales::comma) +
+  ylab("Number of genes") +
+  guides(fill = guide_legend(nrow = 1)) +
+  theme(axis.text.x = element_text(size = 10, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 10,  colour = "black"),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        strip.text.x = element_text(size = 14),
+        strip.text.y = element_text(size = 10)) +
+  facet_wrap2(vars(organism)) -> genes_plot
+
+
+
+# Preview plot
+genes_plot # Figure S5A
+isoforms_plot # Figure S5B
+```
+
+# Save plot and plot input - Genes (Figure S5A)
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S5A.pdf", bg = "white", width = 8, height = 4)
+genes_plot
+```
+
+# Save plot and plot input - Isoforms (Figure S5B)
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S5B.pdf", bg = "white", width = 8, height = 4)
+isoforms_plot
+```
