@@ -1,6 +1,6 @@
 # CapTrap-seq: Advancing Zebrafish Transcriptomic Research Through High-Fidelity Full-Length RNA Sequencing
 
-Monika Kwiatkowska<sup>1</sup>, Marta Blangiewicz<sup>1</sup>, Tomasz Mądry<sup>1</sup>, Sílvia Carbonell-Sala <sup>2</sup>, Roderic Guigó<sup>2,3</sup>, Barbara Uszczynska-Ratajczak<sup>1,*</sup>
+Monika Kwiatkowska<sup>1</sup>, Marta Blangiewicz<sup>1</sup>, Tomasz Mądry<sup>1</sup>, Sílvia Carbonell-Sala <sup>2</sup>, Roderic Guigó<sup>2,3</sup>, Barbara Uszczynska-Ratajczak<sup>1,</sup>*
 
     1. Department of Computational Biology of Noncoding RNA, Institute of Bioorganic Chemistry, Polish Academy of Sciences, Noskowskiego 12/14, 61-704 Poznan, Poland.
     2. Centre for Genomic Regulation (CRG), The Barcelona Institute of Science and Technology, Dr. Aiguader 88, Barcelona 08003, Catalonia, Spain.
