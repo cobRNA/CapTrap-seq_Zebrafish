@@ -1,6 +1,6 @@
 # CapTrap-seq: Advancing Zebrafish Transcriptomic Research Through High-Fidelity Full-Length RNA Sequencing
 
-Monika Kwiatkowska<sup>1</sup>, Marta Blangiewicz<sup>1</sup>, Tomasz Mądry<sup>1</sup>, Sílvia Carbonell-Sala <sup>2</sup>, Roderic Guigó<sup>2,3</sup>, Barbara Uszczynska-Ratajczak<sup>1,</sup>*
+Monika Kwiatkowska`<sup>`1`</sup>`, Marta Blangiewicz`<sup>`1`</sup>`, Tomasz Mądry`<sup>`1`</sup>`, Sílvia Carbonell-Sala `<sup>`2`</sup>`, Roderic Guigó`<sup>`2,3`</sup>`, Barbara Uszczynska-Ratajczak`<sup>`1,`</sup>`*
 
     1. Department of Computational Biology of Noncoding RNA, Institute of Bioorganic Chemistry, Polish Academy of Sciences, Noskowskiego 12/14, 61-704 Poznan, Poland.
     2. Centre for Genomic Regulation (CRG), The Barcelona Institute of Science and Technology, Dr. Aiguader 88, Barcelona 08003, Catalonia, Spain.
@@ -10,11 +10,9 @@ Monika Kwiatkowska<sup>1</sup>, Marta Blangiewicz<sup>1</sup>, Tomasz Mądry<sup
 
 E-mail: barbara.uszczynska@gmail.com (Uszczynska-Ratajczak B).
 
-
 ## Abstract
 
 Zebrafish is a valuable model organism thanks to its genetic and anatomical similarities to humans, offering a more relevant system for studying human biology and disease than in vitro or non-vertebrate models. However, its use in large-scale transcriptomic research is still limited. Most zebrafish studies focus on global expression profiling in specific developmental contexts, contributing little toward improving and expanding gene annotations. These gaps lead to inaccuracies in gene quantification and downstream functional analyses, ultimately reducing the effectiveness of zebrafish as a model system. Further challenges include ineffective ribodepletion methods and limited resources for validate transcript boundaries and splicing patterns. To overcome these challenges, we applied CapTrap-seq, a long-read sequencing method that combines Cap-trapping with oligo(dT) priming to identify 5’-capped, full-length transcripts from both developmental and adult tissue samples. To promote detection of longer RNA molecules, we introduced a size-selection step into CapTrap-seq protocol, which further improved detection of transcript ends without compromising its quantitative accuracy. Our results highlight the genome-agnostic nature of CapTrap-seq, enabling generation of accurate transcript models in non-mammalian systems at high- throughput. CapTrap-seq also facilitates functional annotation of zebrafish genes by uncovering novel, spliced transcript isoforms with potential biological significance.
-
 
 ## Project Structure
 
@@ -26,4 +24,4 @@ Zebrafish is a valuable model organism thanks to its genetic and anatomical simi
 
 ## Running Analyses
 
-Analyses are provided as dedicated R Notebooks. Each notebook can be executed independently and in any order. Running a notebook will generate the corresponding output plots, which will be saved in the Plots/ directory.
+Analyses are provided as dedicated R Notebooks. Each notebook can be executed independently and in any order. Running a notebook will generate the corresponding output plots, which will be saved in the `Plots/` directory.
