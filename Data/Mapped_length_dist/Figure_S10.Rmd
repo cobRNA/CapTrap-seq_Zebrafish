@@ -113,7 +113,6 @@ df_joined %>%
   mutate(Label = paste0("Mapping rate: ", round(mappedReads/rawReads*100, 2),"%\n",
                         "Median: ", med, "\n",
                         "Mapped reads: ", mappedReads)) -> df_datSumm_others
-
 ```
 
 # Generate plots
@@ -181,13 +180,13 @@ Figure_S10_EmbryoFL_ZTA_ZGA
 ## Save plot - CapTrap-seq plot
 ```{r}
 # Save plot
-pdf("../../Plots/Figure_S10_CapTrap_seq.pdf", bg = "white", width = 6, height = 1.5)
+pdf("../../Plots/Figure_S10_CapTrap-seq.pdf", bg = "white", width = 6, height = 1.5)
 Figure_S10_CapTrap
 ```
 
 ## Save plot - joined plot
 ```{r}
 # Save plot
-pdf("../../Plots/Figure_S10_EmbryoFL_ZTA_ZGA.pdf", bg = "white", width = 8, height = 6)
+pdf("../../Plots/Figure_S10_EmbryoFL_ZTA-TE_ZGA.pdf", bg = "white", width = 8, height = 6)
 Figure_S10_EmbryoFL_ZTA_ZGA
 ```
