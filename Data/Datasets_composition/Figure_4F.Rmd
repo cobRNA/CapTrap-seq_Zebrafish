@@ -1,0 +1,303 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ██╗  ██╗███████╗
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██║  ██║██╔════╝
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████║█████╗  
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║██╔══╝  
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗         ██║██║     
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝         ╚═╝╚═╝     
+                                                                 
+# Load R libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  ggplot2,
+  scales,
+  dplyr,
+  stringr,
+  ggrepel
+)
+```
+
+# Prepare environment
+```{bash, engine.opts='-l'}
+######################################################################################
+
+# Summary:
+##########################################################################################
+## Calculate support, number of isoforms per gene and loci per each dataset.
+
+##########################################################################################
+
+##########################################################################################
+# Remove files from previous run
+##########################################################################################
+rm -r .temp
+
+##########################################################################################
+# Handle errors
+##########################################################################################
+set -e          # exit on any non-0 exit status
+set -o pipefail # exit on any non-0 exit status in pipe
+
+##########################################################################################
+# Create directory tree
+##########################################################################################
+mkdir -p .temp/
+mkdir -p .temp/samples/
+
+##########################################################################################
+# Move to working directory
+##########################################################################################
+cd .temp/
+
+##########################################################################################
+# Download data
+##########################################################################################
+# Ensembl.v104 annotation
+wget --no-verbose "https://ftp.ensembl.org/pub/release-104/gtf/danio_rerio/Danio_rerio.GRCz11.104.chr.gtf.gz"
+# Danio Rerio chromosome sizes
+wget --no-verbose "https://hgdownload.soe.ucsc.edu/goldenPath/danRer11/bigZips/danRer11.chrom.sizes"
+
+##########################################################################################
+# Set paths
+##########################################################################################
+utils=../../../Utils/
+daniocode_polyA=../../polyA-sites/danRer11_polyAsites.bed.gz
+cage=../../CAGE/danRer11_CAGE.bed.gz
+chromSizes=danRer11.chrom.sizes
+# Annotations
+Ensemblv104=Danio_rerio.GRCz11.104.chr.gtf.gz
+CapTrap_seq_tmerged=../../Tmerged/output/CapTrap-seq_tmerged.gtf.gz
+ZTA_TE_tmerged=../../Tmerged/output/ZTA-TE_tmerged.gtf.gz
+ZGA_tmerged=../../Tmerged/output/ZGA_tmerged.gtf.gz
+EmbryoFL_tmerged=../../Tmerged/output/EmbryoFL_tmerged.gtf.gz
+SuperSet_tmerged=../../Tmerged/output/SuperSet_tmerged.gtf.gz
+set3E_tmerged=../../Tmerged/output/3E-set_tmerged.gtf.gz
+
+##########################################################################################
+# Copy files
+##########################################################################################
+
+##########################################################################################
+# Unify chromosomes, exclude patches
+##########################################################################################
+echo "++++++ Unifying chromosomes and excluding patches ++++++"
+echo "@ Processing additional files"
+########### Daniocode polyA
+zcat $daniocode_polyA | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' > daniocode_polyA.bed
+########## Cage
+zcat $cage | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' > cage.bed
+########## Chrom.sizes
+cat $chromSizes | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' > chrom.sizes
+########## Ensembl.v104
+zcat $Ensemblv104 | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' | awk '$3=="exon"'| gzip -9 > ensembl104.gtf.gz
+echo "@ Processing tmerged datasets"
+########## Tmerged ZTA-TE # filtering out patches is necessary
+zcat $ZTA_TE_tmerged | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' | awk '$3=="exon"'| gzip -9 > ZTA_TE_tmerged.gtf.gz
+########## Tmerged ZGA
+zcat $ZGA_tmerged | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' | awk '$3=="exon"'| gzip -9 > ZGA_tmerged.gtf.gz
+########## Tmerged EmbryoFL
+zcat $EmbryoFL_tmerged | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' | awk '$3=="exon"'| gzip -9 > EmbryoFL_tmerged.gtf.gz
+########## Tmerged CapTrap-seq
+zcat $CapTrap_seq_tmerged | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' | awk '$3=="exon"'| gzip -9 > CapTrap_seq_tmerged.gtf.gz
+########## Tmerged SuperSet
+zcat $SuperSet_tmerged | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' | awk '$3=="exon"'| gzip -9 > SuperSet_tmerged.gtf.gz
+########## Tmerged 3E-set
+zcat $set3E_tmerged | sed 's/^chrM/MT/g' | sed 's/^chr//g' | awk '$1 ~ /^[0-9XYMT]{1,2}$/ {print $0}' | awk '$3=="exon"'| gzip -9 > 3Eset_tmerged.gtf.gz
+echo ">> DONE"
+
+##########################################################################################
+# Build loci for Ensembl and tmerged datasets
+##########################################################################################
+echo '++++++ Building loci ++++++'
+for file in ensembl104 ZTA_TE_tmerged ZGA_tmerged EmbryoFL_tmerged CapTrap_seq_tmerged SuperSet_tmerged 3Eset_tmerged
+  do
+    echo "Building loci: $file"
+    bedtools intersect -s -wao -a $file.gtf.gz -b $file.gtf.gz | $utils/buildLoci.pl - | $utils/gff2gff.pl - | sort -k1,1 -k4,4n -k5,5n | grep '\S' | gzip -9 > samples/$file.loci.gtf.gz
+  done
+echo ">> DONE"
+
+##########################################################################################
+# Get list of samples
+##########################################################################################
+echo '++++++ Generating the list of samples ++++++'
+for file in samples/*loci.gtf.gz
+  do
+    echo $file >> samples.tsv
+  done
+echo '>> Done <<'
+
+##########################################################################################
+# Extract ends
+##########################################################################################
+echo '++++++ Extracting ends ++++++'
+for file in `cat samples.tsv`
+  do
+    # Convert to bed
+    sample=`basename --suffix .loci.gtf.gz $file`
+    echo "Processing $sample"
+    zcat $file | $utils/sortgff - | $utils/gff2bed_full.pl - | gzip -9 > samples/${sample}.bed.gz
+    for end in 3 5
+      do
+        zcat samples/${sample}.bed.gz | $utils/extractTranscriptEndsFromBed12.pl $end | sort | uniq | grep '\S' > ${sample}.$end.bed
+      done
+  done
+echo '>> Done <<'
+
+##########################################################################################
+# Extract polyA supported transcripts
+##########################################################################################
+echo '++++++ Looking for polyA supported TM ++++++'
+## Extract supported transcripts
+for file in `cat samples.tsv`
+  do
+    sample=`basename --suffix .loci.gtf.gz $file`
+    echo "Processing $sample"
+    cat ${sample}.3.bed | $utils/sortbed - | bedtools slop -s -l 5 -r 5 -i stdin -g chrom.sizes | bedtools intersect -u -s -a stdin -b daniocode_polyA.bed | grep '\S' > ${sample}.3.vspolyAsignals_DANIOCODE.tsv
+  done
+echo '>> Done <<'
+
+##########################################################################################
+# Extract CAGE supported transcripts
+##########################################################################################
+echo '++++++ Looking for CAGE supported TM ++++++'
+## Extract supported transcripts
+for file in `cat samples.tsv`
+  do
+    sample=`basename --suffix .loci.gtf.gz $file`
+    echo "Processing $sample"
+    cat ${sample}.5.bed | $utils/sortbed - | bedtools slop -s -l 50 -r 50 -i stdin -g chrom.sizes | bedtools intersect -u -s -a stdin -b cage.bed | grep '\S' > ${sample}.5.vsCage.tsv
+  done
+echo '>> Done <<'
+
+##########################################################################################
+# Extract Cage and polyA supported transcript IDs
+##########################################################################################
+echo '++++++ Extracting CAGE and polyA supported transcripts ++++++'
+for file in `cat samples.tsv`
+  do
+    sample=`basename --suffix .loci.gtf.gz $file`
+    echo "Processing $sample"
+    # polyA-supported
+    cat ${sample}.3.vspolyAsignals_DANIOCODE.tsv | cut -f4 | sed 's/,/\n/g' | sort | uniq | grep '\S' > ${sample}_DANIOCODE.tx.polyA
+    # CAGE-supported
+    cat ${sample}.5.vsCage.tsv | cut -f4 | sed 's/,/\n/g' | sort | uniq | grep '\S' > ${sample}.tx.cage
+  done
+echo '>> Done <<'
+
+##########################################################################################
+# Extract Full-length transcript IDs
+##########################################################################################
+echo '++++++ Extracting Full-length transcript IDs ++++++'
+for file in `cat samples.tsv`
+  do
+    sample=`basename --suffix .loci.gtf.gz $file`
+    echo "Processing $sample"
+    # polyA-supported
+    cat ${sample}_DANIOCODE.tx.polyA | grep -Fwf ${sample}.tx.cage > ${sample}_DANIOCODE.FL.tms.ids
+  done
+echo '>> Done <<'
+
+##########################################################################################
+# Generate data for Barbie plot
+##########################################################################################
+echo '++++++ Generating data for barbie plot ++++++'
+# Remove old plot input
+: > ../Figure_4F_plot_input.tsv
+for file in `cat samples.tsv`
+  do
+    sample=`basename --suffix .loci.gtf.gz $file`
+    echo "Processing $sample"
+    fl=`cat ${sample}_DANIOCODE.FL.tms.ids | wc -l`
+    total=`zcat samples/${sample}.bed.gz | cut -f4 | sort | uniq | wc -l`
+    propFl=`echo $fl / $total | bc -l`
+    gene=`zcat $file | $utils/extract.gtf.tags.sh - gene_id | sort | uniq | wc -l`
+    nbTx=`echo $total / $gene | bc -l`
+    echo -e "$sample\t$propFl\t$gene\t$nbTx" >> ../Figure_4F_plot_input.tsv
+  done
+echo '>> Done <<'
+  
+##########################################################################################
+# REPORT COMPLETENESS
+##########################################################################################
+echo '################## COMPLETED ##################'
+```
+
+# Rename catalogs here
+```{r}
+# Clean the env
+rm(list = ls())
+
+df_figure_4f <- read.table("Figure_4F_plot_input.tsv", header = F, as.is = T, sep = "\t") %>%
+  rename(
+    name = "V1",
+    fl = "V2",
+    gene = "V3",
+    isoforms = "V4"
+  ) %>% 
+  mutate(type = ifelse(str_detect(name, "tmerge"), "tmerged" , "raw")) %>% 
+  # Rename datasets
+  mutate(dataset = name) %>%
+  mutate(dataset = ifelse(dataset == "ensembl104", "Ensembl v104 (raw)", dataset)) %>%
+  mutate(dataset = ifelse(dataset == "ZTA_TE_tmerged", "ZTA-TE (tmerged)", dataset)) %>%
+  mutate(dataset = ifelse(dataset == "ZGA_tmerged", "ZGA (tmerged)", dataset)) %>%
+  mutate(dataset = ifelse(dataset == "EmbryoFL_tmerged", "EmbryoFL (tmerged)", dataset)) %>%
+  mutate(dataset = ifelse(dataset == "CapTrap_seq_tmerged", "CapTrap-seq (tmerged)", dataset)) %>%
+  mutate(dataset = ifelse(dataset == "SuperSet_tmerged", "SuperSet (tmerged)", dataset)) %>%
+  mutate(dataset = ifelse(dataset == "3Eset_tmerged", "3E-set (tmerged)", dataset))
+
+# Preview
+df_figure_4f
+```
+
+# Barbie plot - tmerged
+```{r}
+cbPalette <- c("#cccccc", # ensembl
+               "#90e0ef", "#90e0ef", "#90e0ef", # datasets
+               "#a0d9d9", # captrap
+               "#36caf8", "#8b8bc3") # 3E and superset
+
+df_figure_4f %>% 
+  filter(type == "tmerged" | type == "raw") %>% 
+  ggplot(data=., aes(x=gene, y=fl, size=isoforms, fill=factor(dataset,
+                                                              levels=c("Ensembl v104 (raw)",
+                                                                       "ZTA-TE (tmerged)",
+                                                                       "ZGA (tmerged)",
+                                                                       "EmbryoFL (tmerged)",
+                                                                       "CapTrap-seq (tmerged)",
+                                                                       "3E-set (tmerged)",
+                                                                       "SuperSet (tmerged)"
+                                                                       )))) +
+  geom_point(shape = 21, alpha = 0.75) +
+  geom_label_repel(aes(label = dataset),
+                   box.padding   = 0.35,
+                   size = 4, 
+                   point.padding = 0.5,
+                   segment.color = 'grey50') +
+  ylab("% Support") +
+  scale_fill_manual(values = cbPalette)+ theme_bw(base_size = 24) +
+  xlab("Number of loci") +
+  #ggtitle("") +
+  scale_x_continuous(lim=c(0,50000), breaks=seq(0,50000, by=10000)) +
+  scale_y_continuous(labels=percent, lim=c(0,1.0)) +
+  theme(axis.text.x = element_text(vjust=0.5),legend.text = element_text(size=12.5)) +
+  theme(axis.line.x = element_line(colour = "black"),
+  axis.line.y = element_line(colour = "black"),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  strip.background = element_rect(colour="black",fill="white")) +
+  scale_size_area(max_size = 17) +
+  guides(fill = guide_legend(override.aes = list(size=6.5),
+                             title = "Dataset")) -> figure_4f_tmerged_plot
+
+# Preview plot
+figure_4f_tmerged_plot
+```
+
+# Save plot and input
+```{r}
+# Save plot
+pdf("../../Plots/Figure_4F.pdf", bg = "white", width = 14, height = 9)
+figure_4f_tmerged_plot
+```
