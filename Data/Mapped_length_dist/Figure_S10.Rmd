@@ -1,0 +1,193 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗ ██╗ ██████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝███║██╔═████╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗╚██║██║██╔██║
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║ ██║████╔╝██║
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║ ██║╚██████╔╝
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝ ╚═╝ ╚═════╝ 
+                                                                                              
+# Load R libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2,
+               scales,
+               dplyr,
+               tidyr,
+               ggh4x,
+               stringr)
+```
+
+# Extract data
+```{bash}
+# Combine CapTrap-seq data
+cat CapTrap-seq_read_lengths.tsv.part00.gz CapTrap-seq_read_lengths.tsv.part01.gz > CapTrap-seq_read_lengths.tsv.gz
+
+# Extract files
+for file in *.tsv.gz
+  do
+    echo "Extracting: $file"
+    gzip -dk $file
+    echo "Done!"
+  done
+```
+
+# Prapre plots
+# Load data
+```{r}
+# Clean the env
+rm(list = ls())
+
+# Set levels
+dataset_levels <- c("CapTrap-seq", "EmbryoFL", "ZTA-TE", "ZGA")
+
+sample_levels <- c(
+  "fertilizedegg", "unfertilized", "1-cell", "2-cell", "64-cell",
+  "128-cell", "1k-cell", "high", "oblong", "sphere", "dome",
+  "30-epiboly", "50-epiboly", "2-4cell", "shield",
+  "28hpf", "brain", "heart", "testis", "75-epiboly", "1-4somites",
+  "14-19somites", "20-25somites", "prim-5", "prim-15",
+  "prim-25", "long-pec", "protruding-mouth", "day4",
+  "day5", "day6", "preZGA", "postZGA"
+)
+# Load data
+df_joined <- read.table("CapTrap-seq_read_lengths.tsv", header=F, as.is=T, sep="\t") %>% 
+  rename("sample" = V1) %>% 
+  rename("cap" = V2) %>%
+  rename("length" = V3) %>%
+  rename("rawReads" = V4) %>%
+  rename("mappedReads" = V5) %>%
+  mutate(sample = ifelse(sample=="HeartRep1", "heart", sample)) %>% 
+  mutate(sample = ifelse(sample=="BrainRep1", "brain", sample)) %>% 
+  mutate(sample = ifelse(sample=="28hpfRep1", "28hpf", sample)) %>% 
+  mutate(sample = ifelse(sample=="2-4CellRep1", "2-4cell", sample)) %>% 
+  mutate(sample = ifelse(sample=="ShieldRep1", "shield", sample)) %>% 
+  mutate(sample = ifelse(sample=="TestisRep1", "testis", sample)) %>% 
+  mutate(dataset = "CapTrap-seq") %>% 
+  bind_rows(read.table("ZTA-TE_read_lengths.tsv", header=F, as.is=T, sep="\t") %>% 
+              rename("sample" = V1) %>% 
+              rename("cap" = V2) %>%
+              rename("length" = V3) %>%
+              rename("rawReads" = V4) %>%
+              rename("mappedReads" = V5) %>%
+              mutate(sample = ifelse(sample=="1cell", "1-cell", sample)) %>% 
+              mutate(sample = ifelse(sample=="64cell", "64-cell", sample)) %>%
+              mutate(sample = ifelse(sample=="1kcell", "1k-cell", sample)) %>% 
+              mutate(sample = ifelse(sample=="30epiboly", "30-epiboly", sample)) %>% 
+              mutate(sample = ifelse(sample=="50epiboly", "50-epiboly", sample)) %>% 
+              mutate(dataset = "ZTA-TE")) %>%
+  bind_rows(read.table("ZGA_read_lengths.tsv", header=F, as.is=T, sep="\t") %>% 
+              rename("sample" = V1) %>% 
+              rename("cap" = V2) %>%
+              rename("length" = V3) %>%
+              rename("rawReads" = V4) %>%
+              rename("mappedReads" = V5) %>% 
+              mutate(dataset = "ZGA")) %>% 
+  bind_rows(read.table("EmbryoFL_read_lengths.tsv", header=F, as.is=T, sep="\t") %>% 
+              rename("sample" = V1) %>% 
+              rename("cap" = V2) %>%
+              rename("length" = V3) %>%
+              rename("rawReads" = V4) %>%
+              rename("mappedReads" = V5) %>% 
+              mutate(dataset = "EmbryoFL")) %>% 
+  # Set levels
+  mutate(dataset = factor(dataset, levels = dataset_levels),
+         sample  = factor(sample,  levels = sample_levels)) %>% 
+  mutate(facet_var = interaction(dataset, sample, sep = " | ", lex.order = TRUE))
+
+# Calculate stats
+## CapTrap-seq plot
+df_joined %>%
+  filter(dataset == "CapTrap-seq") %>% 
+  group_by(facet_var, cap, rawReads, mappedReads) %>%
+  summarise(med=median(length)) %>% 
+  ungroup() %>% 
+  mutate(Label = paste0("Mapping rate: ", round(mappedReads/rawReads*100, 2),"%\n",
+                        "Median: ", med, "\n",
+                        "Mapped reads: ", mappedReads)) -> df_datSumm_CapTrap_seq
+
+## Others
+df_joined %>%
+  filter(dataset != "CapTrap-seq") %>% 
+  group_by(facet_var, cap, rawReads, mappedReads) %>%
+  summarise(med=median(length)) %>% 
+  ungroup() %>% 
+  mutate(Label = paste0("Mapping rate: ", round(mappedReads/rawReads*100, 2),"%\n",
+                        "Median: ", med, "\n",
+                        "Mapped reads: ", mappedReads)) -> df_datSumm_others
+
+```
+
+# Generate plots
+```{r}
+lineSize=0.2
+
+# Plot CapTrap data
+df_joined %>%
+  filter(dataset == "CapTrap-seq") %>% 
+  ggplot(data=., aes(x=length)) +
+    geom_histogram(binwidth=100, alpha=0.35, fill="#cc9966") +
+    geom_vline(data=df_datSumm_CapTrap_seq, aes(xintercept=med), color="#cc9966", linewidth=lineSize, show.legend=FALSE) +
+    geom_text(data=df_datSumm_CapTrap_seq, aes(x = 5500, y = 2000000, label = Label),
+              size=1, vjust = "inward", hjust = "inward") + 
+    scale_x_continuous(limits=c(0,6000), labels=comma) +
+    ylab("Count") +
+    theme_bw() +
+    xlab("") +
+    theme(axis.text.x = element_text(size = 5, colour = "black", vjust=0.5),
+        axis.text.y = element_text(size = 8,  colour = "black"),
+        legend.text = element_text(size = 8, hjust=0.5),
+        plot.title = element_text(size = 22),
+        legend.title = element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        strip.text.x=element_text(size=7),
+        strip.text.y=element_text(size=10)) +
+    theme(legend.position="top") +
+    facet_wrap(~ facet_var,
+             labeller = labeller(facet_var = function(x) gsub(" \\| ", "\n", x)),
+             ncol=8) -> Figure_S10_CapTrap
+
+# Plot other catalogs
+df_joined %>%
+  filter(dataset != "CapTrap-seq") %>% 
+  ggplot(data=., aes(x=length)) +
+    geom_histogram(binwidth=100, alpha=0.35, fill="#cc9966") +
+    geom_vline(data=df_datSumm_others, aes(xintercept=med), color="#cc9966", linewidth=lineSize, show.legend=FALSE) +
+    geom_text(data=df_datSumm_others, aes(x = 5500, y = 60000, label = Label),
+              size=1, vjust = "inward", hjust = "inward") + 
+    scale_x_continuous(limits=c(0,6000), labels=comma) +
+    scale_y_continuous(limits=c(0,65000), labels=comma) +
+    ylab("Count") +
+    theme_bw() +
+    xlab("") +
+    theme(axis.text.x = element_text(size = 5, colour = "black", vjust=0.5),
+        axis.text.y = element_text(size = 8,  colour = "black"),
+        legend.text = element_text(size = 8, hjust=0.5),
+        plot.title = element_text(size = 22),
+        legend.title = element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        strip.text.x=element_text(size=7),
+        strip.text.y=element_text(size=10)) +
+    theme(legend.position="top") +
+    facet_wrap(~ facet_var,
+             labeller = labeller(facet_var = function(x) gsub(" \\| ", "\n", x)),
+             ncol=8) -> Figure_S10_EmbryoFL_ZTA_ZGA
+
+# Preview plots
+Figure_S10_CapTrap
+Figure_S10_EmbryoFL_ZTA_ZGA
+```
+
+## Save plot - CapTrap-seq plot
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S10_CapTrap.pdf", bg = "white", width = 6, height = 1.5)
+Figure_S10_CapTrap
+```
+
+## Save plot - joined plot
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S10_EmbryoFL_ZTA_ZGA.pdf", bg = "white", width = 8, height = 6)
+Figure_S10_EmbryoFL_ZTA_ZGA
+```
