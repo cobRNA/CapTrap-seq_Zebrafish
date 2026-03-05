@@ -1,0 +1,351 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗ ██╗ ██╗    
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝███║███║    
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗╚██║╚██║    
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║ ██║ ██║    
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║ ██║ ██║    
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝ ╚═╝ ╚═╝    
+                                                                     
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗ ██╗██████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝███║╚════██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗╚██║ █████╔╝
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║ ██║██╔═══╝ 
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║ ██║███████╗
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝ ╚═╝╚══════╝
+       
+# Load libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2,
+               dplyr,
+               tidyr,
+               ggh4x,
+               stringr,
+               scales)
+```
+
+
+```{r}
+# Clean the env
+rm(list = ls())
+
+#####################################################################
+### Load and transform data
+#####################################################################
+
+############################### CapTrap_seq
+read.table("matureRNALengths_output/matureRNALength.stats.CapTrap_seq.all.tsv", header = F, as.is = T, sep = "\t") %>%
+  select(V1, V4, V5, V6, V7, V8) %>% 
+  rename("dataset" = "V1") %>% 
+  rename("sample" = "V4") %>% 
+  rename("txID" = "V5") %>% 
+  rename("splice_status" = "V6") %>%
+  rename("length" = "V7") %>%
+  rename("category" = "V8") %>%
+  mutate(sample = str_remove(sample, "Pre_0\\+_")) %>%
+  # Rename for consistency
+  mutate(sample = ifelse(sample=="Heart", "heart", sample)) %>% 
+  mutate(sample = ifelse(sample=="Brain", "brain", sample)) %>% 
+  mutate(sample = ifelse(sample=="28hpf", "28hpf", sample)) %>% 
+  mutate(sample = ifelse(sample=="2-4Cell", "2-4cell", sample)) %>% 
+  mutate(sample = ifelse(sample=="Shield", "shield", sample)) %>% 
+  mutate(sample = ifelse(sample=="Testis", "testis", sample)) %>% 
+  mutate(dataset = "CapTrap-seq") %>% 
+  ############################### ZTA_TE
+  rbind(read.table("matureRNALengths_output/matureRNALength.stats.ZTA_TE.all.tsv", header = F, as.is = T, sep = "\t") %>%
+          select(V1, V4, V5, V6, V7, V8) %>% 
+          rename("dataset" = "V1") %>% 
+          rename("sample" = "V4") %>% 
+          rename("txID" = "V5") %>% 
+          rename("splice_status" = "V6") %>%
+          rename("length" = "V7") %>%
+          rename("category" = "V8") %>%
+          mutate(sample = str_remove(sample, "Pre_0\\+_")) %>%
+          # Rename for consistency
+          mutate(sample = ifelse(sample=="1cell", "1-cell", sample)) %>% 
+          mutate(sample = ifelse(sample=="64cell", "64-cell", sample)) %>%
+          mutate(sample = ifelse(sample=="1kcell", "1k-cell", sample)) %>% 
+          mutate(sample = ifelse(sample=="30epiboly", "30-epiboly", sample)) %>% 
+          mutate(sample = ifelse(sample=="50epiboly", "50-epiboly", sample)) %>% 
+          mutate(dataset = "ZTA-TE")) %>% 
+  ############################### ZGA
+  rbind(read.table("matureRNALengths_output/matureRNALength.stats.ZGA.all.tsv", header = F, as.is = T, sep = "\t") %>%
+          select(V1, V4, V5, V6, V7, V8) %>% 
+          rename("dataset" = "V1") %>% 
+          rename("sample" = "V4") %>% 
+          rename("txID" = "V5") %>% 
+          rename("splice_status" = "V6") %>%
+          rename("length" = "V7") %>%
+          rename("category" = "V8") %>%
+          mutate(sample = str_remove(sample, "Pre_0\\+_")) %>% 
+          # Rename for consistency
+          mutate(dataset = "ZGA")) %>% 
+  ############################### EmbryoFL
+  rbind(read.table("matureRNALengths_output/matureRNALength.stats.EmbryoFL.all.tsv", header = F, as.is = T, sep = "\t") %>%
+          select(V1, V4, V5, V6, V7, V8) %>% 
+          rename("dataset" = "V1") %>% 
+          rename("sample" = "V4") %>% 
+          rename("txID" = "V5") %>% 
+          rename("splice_status" = "V6") %>%
+          rename("length" = "V7") %>%
+          rename("category" = "V8") %>%
+          mutate(sample = str_remove(sample, "Pre_0\\+_")) %>% 
+          # Rename for consistency
+          mutate(dataset = "EmbryoFL")) %>% 
+  mutate(category = ifelse(category=="FL_TMs", "FL TMs", category)) -> df_joined_all
+
+  
+# Set levels
+dataset_levels <- c("CapTrap-seq", "EmbryoFL", "ZTA-TE", "ZGA")
+
+sample_levels <- c(
+  "fertilizedegg", "unfertilized", "1-cell", "2-cell", "64-cell",
+  "128-cell", "1k-cell", "high", "oblong", "sphere", "dome",
+  "30-epiboly", "50-epiboly", "2-4cell", "shield",
+  "28hpf", "brain", "heart", "testis", "75-epiboly", "1-4somites",
+  "14-19somites", "20-25somites", "prim-5", "prim-15",
+  "prim-25", "long-pec", "protruding-mouth", "day4",
+  "day5", "day6", "preZGA", "postZGA"
+)
+
+# Apply levels to dataframe
+df_joined_all %>% 
+  mutate(category = factor(category, levels = c("TMs", "FL TMs")),
+         dataset = factor(dataset, levels = dataset_levels),
+         sample  = factor(sample,  levels = sample_levels)) %>% 
+  mutate(facet_var = interaction(dataset, sample, sep = " | ", lex.order = TRUE)) -> df_joined_all
+
+# Calculate stats
+## CapTrap_seq plot
+### ALL
+df_joined_all %>%
+  filter(dataset == "CapTrap-seq") %>% 
+  group_by(facet_var, category) %>%
+  summarise(med=median(length)) %>% 
+  ungroup() %>% 
+  mutate(Label = paste0("Median: ", med)) -> df_datSumm_CapTrap_seq_all
+### SPLICED
+df_joined_all %>%
+  filter(dataset == "CapTrap-seq") %>% 
+  filter(splice_status == 1) %>% 
+  group_by(facet_var, category) %>%
+  summarise(med=median(length)) %>% 
+  ungroup() %>% 
+  mutate(Label = paste0("Median: ", med)) -> df_datSumm_CapTrap_seq_spliced
+
+
+## Others
+### ALL
+df_joined_all %>%
+  filter(dataset != "CapTrap-seq") %>% 
+  group_by(facet_var, category) %>%
+  summarise(med=median(length)) %>% 
+  ungroup() %>% 
+  mutate(Label = paste0("Median: ", med)) -> df_datSumm_others_all
+### SPLICED
+df_joined_all %>%
+  filter(dataset != "CapTrap-seq") %>% 
+  filter(splice_status == 1) %>% 
+  group_by(facet_var, category) %>%
+  summarise(med=median(length)) %>% 
+  ungroup() %>% 
+  mutate(Label = paste0("Median: ", med)) -> df_datSumm_others_spliced
+  
+# Preview dataframes
+df_joined_all
+df_datSumm_CapTrap_seq_all
+df_datSumm_others_all
+```
+
+# Plots - ALL
+```{r}
+cbPalette=c("#cc9966","#cc00cc")
+
+lineSize=0.2
+
+############################### Plot Captrap data
+df_joined_all %>% 
+  filter(dataset == "CapTrap-seq") %>% 
+  ggplot(data=., aes(x=length, fill=category)) +
+  geom_histogram(binwidth=100, alpha=0.35, position='identity') +
+  geom_vline(data=df_datSumm_CapTrap_seq_all,
+             aes(xintercept=med,
+                 color=category),
+             linewidth=lineSize,
+             show.legend=FALSE) +
+  geom_text(data = df_datSumm_CapTrap_seq_all[df_datSumm_CapTrap_seq_all$category=='TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=2, size=1, show.legend=FALSE) +
+  geom_text(data = df_datSumm_CapTrap_seq_all[df_datSumm_CapTrap_seq_all$category=='FL TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=4,  size=1, show.legend=FALSE) +
+  scale_x_continuous(limits=c(0,6000), labels=comma) +
+  ylab("Count") +
+  xlab("") +
+  theme_bw() +
+  scale_fill_manual(values = cbPalette) +
+  scale_color_manual(values = cbPalette) +
+  theme(axis.text.x = element_text(size = 5, colour = "black", vjust=0.5),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        legend.text = element_text(size = 8, hjust=0.5),
+        plot.title = element_text(size = 22),
+        legend.title = element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        strip.text.x = element_text(size = 7),
+        strip.text.y = element_text(size = 10)) +
+  theme(legend.position="top") +
+    facet_wrap(~ facet_var,
+             labeller = labeller(facet_var = function(x) gsub(" \\| ", "\n", x)),
+             ncol=8) -> CapTrap_seq_all_plot
+
+############################### Plot other catalogs
+df_joined_all %>% 
+  filter(dataset != "CapTrap-seq") %>% 
+  ggplot(data=., aes(x=length, fill=category)) +
+  geom_histogram(binwidth=100, alpha=0.35, position='identity') +
+  geom_vline(data=df_datSumm_others_all,
+             aes(xintercept=med,
+                 color=category),
+             linewidth=lineSize,
+             show.legend=FALSE) +
+  geom_text(data = df_datSumm_others_all[df_datSumm_others_all$category=='TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=2, size=1, show.legend=FALSE) +
+  geom_text(data = df_datSumm_others_all[df_datSumm_others_all$category=='FL TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=4,  size=1, show.legend=FALSE) +
+  scale_x_continuous(limits=c(0,6000), labels=comma) +
+  ylab("Count") +
+  xlab("") +
+  theme_bw() +
+  scale_fill_manual(values = cbPalette) +
+  scale_color_manual(values = cbPalette) +
+  theme(axis.text.x = element_text(size = 5, colour = "black", vjust=0.5),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        legend.text = element_text(size = 8, hjust=0.5),
+        plot.title = element_text(size = 22),
+        legend.title = element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        strip.text.x = element_text(size = 7),
+        strip.text.y = element_text(size = 10)) +
+  theme(legend.position="top") +
+    facet_wrap(~ facet_var,
+             labeller = labeller(facet_var = function(x) gsub(" \\| ", "\n", x)),
+             ncol=8) -> EmbryoFL_ZTA_ZGA_all_plot
+# Preview plots
+CapTrap_seq_all_plot
+EmbryoFL_ZTA_ZGA_all_plot
+```
+
+## Save plot - CapTrap_seq plot: ALL
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S11_CapTrap_seq.pdf", bg = "white", width = 6, height = 2)
+CapTrap_seq_all_plot
+```
+
+## Save plot - joined plot: ALL
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S11_EmbryoFL_ZTA_ZGA.pdf", bg = "white", width = 8, height = 6)
+EmbryoFL_ZTA_ZGA_all_plot
+```
+
+# Plots - SPLICED
+```{r}
+cbPalette=c("#cc9966","#cc00cc")
+
+lineSize=0.2
+
+############################### Plot Captrap data
+df_joined_all %>% 
+  filter(dataset == "CapTrap-seq") %>%
+  filter(splice_status == 1) %>%
+  ggplot(data=., aes(x=length, fill=category)) +
+  geom_histogram(binwidth=100, alpha=0.35, position='identity') +
+  geom_vline(data=df_datSumm_CapTrap_seq_spliced,
+             aes(xintercept=med,
+                 color=category),
+             linewidth=lineSize,
+             show.legend=FALSE) +
+  geom_text(data = df_datSumm_CapTrap_seq_spliced[df_datSumm_CapTrap_seq_spliced$category=='TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=2, size=1, show.legend=FALSE) +
+  geom_text(data = df_datSumm_CapTrap_seq_spliced[df_datSumm_CapTrap_seq_spliced$category=='FL TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=4,  size=1, show.legend=FALSE) +
+  scale_x_continuous(limits=c(0,6000), labels=comma) +
+  ylab("Count") +
+  xlab("") +
+  theme_bw() +
+  scale_fill_manual(values = cbPalette) +
+  scale_color_manual(values = cbPalette) +
+  theme(axis.text.x = element_text(size = 5, colour = "black", vjust=0.5),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        legend.text = element_text(size = 8, hjust=0.5),
+        plot.title = element_text(size = 22),
+        legend.title = element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        strip.text.x = element_text(size = 7),
+        strip.text.y = element_text(size = 10)) +
+  theme(legend.position="top") +
+    facet_wrap(~ facet_var,
+             labeller = labeller(facet_var = function(x) gsub(" \\| ", "\n", x)),
+             ncol=8) -> CapTrap_seq_spliced_plot
+
+############################### Plot other catalogs
+df_joined_all %>% 
+  filter(dataset != "CapTrap-seq") %>% 
+  filter(splice_status == 1) %>%
+  ggplot(data=., aes(x=length, fill=category)) +
+  geom_histogram(binwidth=100, alpha=0.35, position='identity') +
+  geom_vline(data=df_datSumm_others_spliced,
+             aes(xintercept=med,
+                 color=category),
+             linewidth=lineSize,
+             show.legend=FALSE) +
+  geom_text(data = df_datSumm_others_spliced[df_datSumm_others_spliced$category=='TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=2, size=1, show.legend=FALSE) +
+  geom_text(data = df_datSumm_others_spliced[df_datSumm_others_spliced$category=='FL TMs',],
+            aes(label = Label, x = Inf, y = Inf, color=category),
+            hjust=1.2, vjust=4,  size=1, show.legend=FALSE) +
+  scale_x_continuous(limits=c(0,6000), labels=comma) +
+  ylab("Count") +
+  xlab("") +
+  theme_bw() +
+  scale_fill_manual(values = cbPalette) +
+  scale_color_manual(values = cbPalette) +
+  theme(axis.text.x = element_text(size = 5, colour = "black", vjust=0.5),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        legend.text = element_text(size = 8, hjust=0.5),
+        plot.title = element_text(size = 22),
+        legend.title = element_blank(),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        strip.text.x = element_text(size = 7),
+        strip.text.y = element_text(size = 10)) +
+  theme(legend.position="top") +
+    facet_wrap(~ facet_var,
+             labeller = labeller(facet_var = function(x) gsub(" \\| ", "\n", x)),
+             ncol=8) -> EmbryoFL_ZTA_ZGA_spliced_plot
+# Preview plots
+CapTrap_seq_spliced_plot
+EmbryoFL_ZTA_ZGA_spliced_plot
+```
+
+## Save plot - CapTrap_seq plot: SPLICED
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S12_CapTrap_seq.pdf", bg = "white", width = 6, height = 2)
+CapTrap_seq_spliced_plot
+```
+
+## Save plot - joined plot: SPLICED
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S12_EmbryoFL_ZTA_ZGA.pdf", bg = "white", width = 8, height = 6)
+EmbryoFL_ZTA_ZGA_spliced_plot
+```
