@@ -7,3 +7,4 @@ CapTrap-seq_Zebrafish.Rproj
 
 # Temporary files and directories
 *.temp
+Data/Mapped_length_dist/*.tsv
