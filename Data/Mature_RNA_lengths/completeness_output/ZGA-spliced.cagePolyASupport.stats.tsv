@@ -1,0 +1,8 @@
+postZGA	preCap	0+	postZGA	cageOnly	7394	0.847839
+postZGA	preCap	0+	postZGA	cageAndPolyA	1023	0.117303
+postZGA	preCap	0+	postZGA	polyAOnly	9	0.001032
+postZGA	preCap	0+	postZGA	noCageNoPolyA	295	0.033826
+preZGA	preCap	0+	preZGA	cageOnly	7663	0.845619
+preZGA	preCap	0+	preZGA	cageAndPolyA	1136	0.125359
+preZGA	preCap	0+	preZGA	polyAOnly	10	0.001104
+preZGA	preCap	0+	preZGA	noCageNoPolyA	253	0.027919

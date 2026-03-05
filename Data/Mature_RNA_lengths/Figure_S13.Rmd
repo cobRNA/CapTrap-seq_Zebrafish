@@ -1,0 +1,245 @@
+███████╗██╗ ██████╗ ██╗   ██╗██████╗ ███████╗    ███████╗ ██╗██████╗ 
+██╔════╝██║██╔════╝ ██║   ██║██╔══██╗██╔════╝    ██╔════╝███║╚════██╗
+█████╗  ██║██║  ███╗██║   ██║██████╔╝█████╗      ███████╗╚██║ █████╔╝
+██╔══╝  ██║██║   ██║██║   ██║██╔══██╗██╔══╝      ╚════██║ ██║ ╚═══██╗
+██║     ██║╚██████╔╝╚██████╔╝██║  ██║███████╗    ███████║ ██║██████╔╝
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝ ╚═╝╚═════╝ 
+                                                                     
+# Load libraries
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(ggplot2,
+               dplyr,
+               tidyr,
+               ggh4x,
+               stringr,
+               scales)
+```
+
+# Analyse data
+```{r}
+# Clean the env
+rm(list = ls())
+
+#####################################################################
+### Load and transform data
+#####################################################################
+
+############################### CapTrap_seq
+read.table("completeness_output/CapTrap_seq-all.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+  select(V1, V5, V6) %>% 
+  rename("sample" = "V1") %>% 
+  rename("category" = "V5") %>% 
+  rename("count" = "V6") %>% 
+  mutate(status = "all") %>% 
+  bind_rows(read.table("completeness_output/CapTrap_seq-spliced.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+              select(V1, V5, V6) %>% 
+              rename("sample" = "V1") %>% 
+              rename("category" = "V5") %>% 
+              rename("count" = "V6") %>% 
+              mutate(status = "spliced")) %>% 
+  mutate(sample = str_remove(sample, "Pre_0\\+_")) %>% 
+  pivot_wider(names_from = "status",
+              values_from = "count") %>% 
+  mutate(unspliced = all-spliced) %>% 
+  pivot_longer(cols = c("all", "spliced", "unspliced"),
+               names_to = "splice_status",
+               values_to = "count") %>% 
+  group_by(sample) %>% 
+  mutate(total = sum(count) / 2) %>%  # hehe
+  ungroup() %>% 
+  mutate(percentage = count / total) %>% 
+  # rename for consistency 5'- complete only 5'+3' - complete 3'- complete only 5'+3'- incomplete
+  mutate(category = ifelse(category=="cageOnly", "5'- complete only", category)) %>% 
+  mutate(category = ifelse(category=="cageAndPolyA", "5'+3' - complete", category)) %>% 
+  mutate(category = ifelse(category=="polyAOnly", "3'- complete only", category)) %>% 
+  mutate(category = ifelse(category=="noCageNoPolyA", "5'+3'- incomplete", category)) %>% 
+  mutate(sample = ifelse(sample=="Heart", "heart", sample)) %>% 
+  mutate(sample = ifelse(sample=="Brain", "brain", sample)) %>% 
+  mutate(sample = ifelse(sample=="28hpf", "28hpf", sample)) %>% 
+  mutate(sample = ifelse(sample=="2-4Cell", "2-4cell", sample)) %>% 
+  mutate(sample = ifelse(sample=="Shield", "shield", sample)) %>% 
+  mutate(sample = ifelse(sample=="Testis", "testis", sample)) %>% 
+  mutate(dataset = "CapTrap-seq") %>% 
+############################### ZTA_TE
+  rbind(read.table("completeness_output/ZTA_TE-all.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+          select(V1, V5, V6) %>% 
+          rename("sample" = "V1") %>% 
+          rename("category" = "V5") %>% 
+          rename("count" = "V6") %>% 
+          mutate(status = "all") %>% 
+          bind_rows(read.table("completeness_output/ZTA_TE-spliced.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+                      select(V1, V5, V6) %>% 
+                      rename("sample" = "V1") %>% 
+                      rename("category" = "V5") %>% 
+                      rename("count" = "V6") %>% 
+                      mutate(status = "spliced")) %>% 
+          mutate(sample = str_remove(sample, "Pre_0\\+_")) %>% 
+          pivot_wider(names_from = "status",
+                      values_from = "count") %>% 
+          mutate(unspliced = all-spliced) %>% 
+          pivot_longer(cols = c("all", "spliced", "unspliced"),
+                       names_to = "splice_status",
+                       values_to = "count") %>% 
+          group_by(sample) %>% 
+          mutate(total = sum(count) / 2) %>%  # hehe
+          ungroup() %>% 
+          mutate(percentage = count / total) %>% 
+          # rename for consistency 5'- complete only 5'+3' - complete 3'- complete only 5'+3'- incomplete
+          mutate(category = ifelse(category=="cageOnly", "5'- complete only", category)) %>% 
+          mutate(category = ifelse(category=="cageAndPolyA", "5'+3' - complete", category)) %>% 
+          mutate(category = ifelse(category=="polyAOnly", "3'- complete only", category)) %>% 
+          mutate(category = ifelse(category=="noCageNoPolyA", "5'+3'- incomplete", category)) %>% 
+          mutate(sample = ifelse(sample=="1cell", "1-cell", sample)) %>% 
+          mutate(sample = ifelse(sample=="64cell", "64-cell", sample)) %>%
+          mutate(sample = ifelse(sample=="1kcell", "1k-cell", sample)) %>% 
+          mutate(sample = ifelse(sample=="30epiboly", "30-epiboly", sample)) %>% 
+          mutate(sample = ifelse(sample=="50epiboly", "50-epiboly", sample)) %>% 
+          mutate(dataset = "ZTA-TE")) %>% 
+############################### ZGA
+  rbind(read.table("completeness_output/ZGA-all.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+          select(V1, V5, V6) %>% 
+          rename("sample" = "V1") %>% 
+          rename("category" = "V5") %>% 
+          rename("count" = "V6") %>% 
+          mutate(status = "all") %>% 
+          bind_rows(read.table("completeness_output/ZGA-spliced.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+                      select(V1, V5, V6) %>% 
+                      rename("sample" = "V1") %>% 
+                      rename("category" = "V5") %>% 
+                      rename("count" = "V6") %>% 
+                      mutate(status = "spliced")) %>% 
+          mutate(sample = str_remove(sample, "Pre_0\\+_")) %>% 
+          pivot_wider(names_from = "status",
+                      values_from = "count") %>% 
+          mutate(unspliced = all-spliced) %>% 
+          pivot_longer(cols = c("all", "spliced", "unspliced"),
+                       names_to = "splice_status",
+                       values_to = "count") %>% 
+          group_by(sample) %>% 
+          mutate(total = sum(count) / 2) %>%  # hehe
+          ungroup() %>% 
+          mutate(percentage = count / total) %>% 
+          # rename for consistency 5'- complete only 5'+3' - complete 3'- complete only 5'+3'- incomplete
+          mutate(category = ifelse(category=="cageOnly", "5'- complete only", category)) %>% 
+          mutate(category = ifelse(category=="cageAndPolyA", "5'+3' - complete", category)) %>% 
+          mutate(category = ifelse(category=="polyAOnly", "3'- complete only", category)) %>% 
+          mutate(category = ifelse(category=="noCageNoPolyA", "5'+3'- incomplete", category)) %>% 
+          mutate(dataset = "ZGA")) %>% 
+############################### EmbryoFL
+  rbind(read.table("completeness_output/EmbryoFL-all.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+          select(V1, V5, V6) %>% 
+          rename("sample" = "V1") %>% 
+          rename("category" = "V5") %>% 
+          rename("count" = "V6") %>% 
+          mutate(status = "all") %>% 
+          bind_rows(read.table("completeness_output/EmbryoFL-spliced.cagePolyASupport.stats.tsv", header = F, as.is = T, sep = "\t") %>%
+                      select(V1, V5, V6) %>% 
+                      rename("sample" = "V1") %>% 
+                      rename("category" = "V5") %>% 
+                      rename("count" = "V6") %>% 
+                      mutate(status = "spliced")) %>% 
+          mutate(sample = str_remove(sample, "Pre_0\\+_")) %>% 
+          pivot_wider(names_from = "status",
+                      values_from = "count") %>% 
+          mutate(unspliced = all-spliced) %>% 
+          pivot_longer(cols = c("all", "spliced", "unspliced"),
+                       names_to = "splice_status",
+                       values_to = "count") %>% 
+          group_by(sample) %>% 
+          mutate(total = sum(count) / 2) %>%  # hehe
+          ungroup() %>% 
+          mutate(percentage = count / total) %>% 
+          # rename for consistency 5'- complete only 5'+3' - complete 3'- complete only 5'+3'- incomplete
+          mutate(category = ifelse(category=="cageOnly", "5'- complete only", category)) %>% 
+          mutate(category = ifelse(category=="cageAndPolyA", "5'+3' - complete", category)) %>% 
+          mutate(category = ifelse(category=="polyAOnly", "3'- complete only", category)) %>% 
+          mutate(category = ifelse(category=="noCageNoPolyA", "5'+3'- incomplete", category)) %>% 
+          mutate(dataset = "EmbryoFL")) -> df_joined 
+
+# Set levels
+dataset_levels <- c("CapTrap-seq", "EmbryoFL", "ZTA-TE", "ZGA")
+
+sample_levels <- c(
+  "fertilizedegg", "unfertilized", "1-cell", "2-cell", "64-cell",
+  "128-cell", "1k-cell", "high", "oblong", "sphere", "dome",
+  "30-epiboly", "50-epiboly", "2-4cell", "shield",
+  "28hpf", "brain", "heart", "testis", "75-epiboly", "1-4somites",
+  "14-19somites", "20-25somites", "prim-5", "prim-15",
+  "prim-25", "long-pec", "protruding-mouth", "day4",
+  "day5", "day6", "preZGA", "postZGA"
+)
+
+# Apply levels to dataframe
+df_joined %>% 
+  mutate(dataset = factor(dataset, levels = dataset_levels),
+         sample  = factor(sample,  levels = sample_levels)) %>% 
+  mutate(facet_var = interaction(dataset, sample, sep = " | ", lex.order = TRUE)) -> df_joined
+
+# Calculate percentage for each bar for each sample
+df_joined %>% 
+  group_by(facet_var, splice_status) %>% 
+  summarise(percent_per_bar = sum(percentage)) %>% 
+  ungroup() -> df_percent_helper
+
+# Preview dataframe
+df_joined
+df_percent_helper
+```  
+  
+# Plot data
+```{r}
+# Plot data
+df_joined %>% 
+  ggplot(data=.,
+         aes(x=splice_status, y=percentage)) +
+  geom_bar(stat="identity",
+           aes(fill=factor(category, levels = c("5'- complete only",
+                                                "5'+3' - complete",
+                                                "3'- complete only",
+                                                "5'+3'- incomplete"))))  +
+  geom_text(aes(label = ifelse(count > 0, paste0(scales::percent(percentage, accuracy = 0.1),"\n", "(", comma(count), ")"), ""),
+                fill=factor(category, levels = c("5'- complete only",
+                                                "5'+3' - complete",
+                                                "3'- complete only",
+                                                "5'+3'- incomplete"))),
+            position = position_stack(vjust = 0.5),
+            size=1.5) +
+  geom_text(data = df_percent_helper,
+            aes(x = splice_status,
+                y = 1.05,
+                label = scales::percent(percent_per_bar, accuracy = 0.1)),
+            vjust = -0.5,
+            size = 1.8,
+            color = "blue") +
+  scale_y_continuous(limits=c(0, 1.1), labels=percent) +
+  ylab("Percent of Transcript Models") +
+  theme_bw() +
+  ggtitle("") +
+  scale_fill_manual(values=c("#e5b3e5","#C453C4","#b3e0ff","#a6a6a6")) +
+  xlab("") +
+  theme(axis.text.x = element_text(size = 5, colour = "black", vjust=0.5),
+        axis.text.y = element_text(size = 8,  colour = "black"),
+        legend.text = element_text(size = 8, hjust=0.5),
+        plot.title = element_text(size = 22),
+        legend.title = element_text(size=0, color="white"),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        strip.text.x=element_text(size=7),
+        strip.text.y=element_text(size=10)) +
+  theme(legend.position="top") +
+  facet_wrap(~ facet_var,
+             labeller = labeller(facet_var = function(x) gsub(" \\| ", "\n", x)),
+             scales="free_x",
+             ncol=8) -> Figure_S13
+
+# Preview plots
+Figure_S13
+```
+
+## Save plot
+```{r}
+# Save plot
+pdf("../../Plots/Figure_S13.pdf", bg = "white", width = 8, height = 11)
+Figure_S13
+```
