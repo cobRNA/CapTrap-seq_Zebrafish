@@ -241,14 +241,14 @@ EmbryoFL_ZTA_ZGA_all_plot
 ## Save plot - CapTrap_seq plot: ALL
 ```{r}
 # Save plot
-pdf("../../Plots/Figure_S11_CapTrap_seq.pdf", bg = "white", width = 6, height = 2)
+pdf("../../Plots/Figure_S11_CapTrap-seq.pdf", bg = "white", width = 6, height = 2)
 CapTrap_seq_all_plot
 ```
 
 ## Save plot - joined plot: ALL
 ```{r}
 # Save plot
-pdf("../../Plots/Figure_S11_EmbryoFL_ZTA_ZGA.pdf", bg = "white", width = 8, height = 6)
+pdf("../../Plots/Figure_S11_EmbryoFL_ZTA-TE_ZGA.pdf", bg = "white", width = 8, height = 6)
 EmbryoFL_ZTA_ZGA_all_plot
 ```
 
@@ -339,13 +339,13 @@ EmbryoFL_ZTA_ZGA_spliced_plot
 ## Save plot - CapTrap_seq plot: SPLICED
 ```{r}
 # Save plot
-pdf("../../Plots/Figure_S12_CapTrap_seq.pdf", bg = "white", width = 6, height = 2)
+pdf("../../Plots/Figure_S12_CapTrap-seq.pdf", bg = "white", width = 6, height = 2)
 CapTrap_seq_spliced_plot
 ```
 
 ## Save plot - joined plot: SPLICED
 ```{r}
 # Save plot
-pdf("../../Plots/Figure_S12_EmbryoFL_ZTA_ZGA.pdf", bg = "white", width = 8, height = 6)
+pdf("../../Plots/Figure_S12_EmbryoFL_ZTA-TE_ZGA.pdf", bg = "white", width = 8, height = 6)
 EmbryoFL_ZTA_ZGA_spliced_plot
 ```
