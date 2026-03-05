@@ -181,7 +181,7 @@ Figure_S10_EmbryoFL_ZTA_ZGA
 ## Save plot - CapTrap-seq plot
 ```{r}
 # Save plot
-pdf("../../Plots/Figure_S10_CapTrap.pdf", bg = "white", width = 6, height = 1.5)
+pdf("../../Plots/Figure_S10_CapTrap_seq.pdf", bg = "white", width = 6, height = 1.5)
 Figure_S10_CapTrap
 ```
 
