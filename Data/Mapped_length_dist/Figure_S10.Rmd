@@ -190,3 +190,16 @@ Figure_S10_CapTrap
 pdf("../../Plots/Figure_S10_EmbryoFL_ZTA-TE_ZGA.pdf", bg = "white", width = 8, height = 6)
 Figure_S10_EmbryoFL_ZTA_ZGA
 ```
+
+# Removed decompressed data to save space
+```{bash}
+# Removed joined CapTrap-seq data
+rm CapTrap-seq_read_lengths.tsv.gz
+# Remove extracted files
+for file in *.tsv
+  do
+    echo "Removing: $file"
+    rm $file
+    echo "Done!"
+  done
+```
