@@ -48,9 +48,9 @@ zcat Danio_rerio.GRCz11.104.chr.gtf.gz | ../../../Utils/skipcomments | sed 's/^/
 zcat Danio_rerio.GRCz11.104.chr.gtf.gz | awk '$3=="gene"' | grep -Ew "antisense|lincRNA|processed_transcript|sense_intronic|sense_overlapping" | ../../../Utils/extract.gtf.tags.sh - gene_id | grep "\S"  > ensembl104_GRCz11_lncRNA_gene.ids
 zcat Danio_rerio.GRCz11.104.chr.gtf.gz | grep -Fwf ensembl104_GRCz11_lncRNA_gene.ids | awk -F"\t" '{OFS=FS} $1="chr"$1' | sed 's/chrMT/chrM/g' | awk '$1 ~ /^chr[0-9XYM]{1,2}$/ {print $0}' | ../../../Utils/gff2gff.pl - | grep "\S" | gzip > ensembl104_GRCz11_lncRNA.gtf.gz
 # Extract pc (mRNA) transcript lengths
-zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz| grep -Fw "transcript_type \"protein_coding\";" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/gff2bed_full.pl - | awk '$10>1' | ../../../Utils/bed12ToTranscriptLength.pl - > ../ensembl.v104_pc_transcript_lengths.tsv
+zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz| grep -Fw "transcript_type \"protein_coding\";" | ../../../Utils/gff2bed_full.pl - | awk '$10>1' | ../../../Utils/bed12ToTranscriptLength.pl - > ../ensembl.v104_pc_transcript_lengths.tsv
 # Extract lncRNA transcript lengths
-zcat ensembl104_GRCz11_lncRNA.gtf.gz | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/gff2bed_full.pl - | awk '$10>1' | ../../../Utils/bed12ToTranscriptLength.pl - > ../ensembl.v104_lncRNA_transcript_lengths.tsv
+zcat ensembl104_GRCz11_lncRNA.gtf.gz | ../../../Utils/gff2bed_full.pl - | awk '$10>1' | ../../../Utils/bed12ToTranscriptLength.pl - > ../ensembl.v104_lncRNA_transcript_lengths.tsv
 
 # Report completeness
 echo ">>>> COMPLETED!"
