@@ -1,4 +1,4 @@
-# CapTrap-seq: Advancing Zebrafish Transcriptomic Research Through High-Fidelity Full-Length RNA Sequencing
+# Advancing functional transcriptomics in zebrafish with high-accuracy full-length RNA sequencing
 
 Monika Kwiatkowska<sup>1,</sup>\*, Tomasz Mądry<sup>1,</sup>\*, Marta Blangiewicz<sup>1</sup>, Sílvia Carbonell-Sala<sup>2</sup>, Roderic Guigó<sup>2,3</sup>, Barbara Uszczynska-Ratajczak<sup>1,#</sup>
 
