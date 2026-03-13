@@ -59,6 +59,9 @@ wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/rel
 # Mouse
 wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M36/gencode.vM36.annotation.gtf.gz"
 wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M36/gencode.vM36.long_noncoding_RNAs.gtf.gz"
+# Zebrafish
+wget --no-verbose "https://ftp.ensembl.org/pub/release-104/gtf/danio_rerio/Danio_rerio.GRCz11.104.chr.gtf.gz"
+
 
 ##########################################################################################
 # Processing
@@ -66,31 +69,33 @@ wget --no-verbose "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/rel
 # Gencode.v47 annotation 
 ##########################################################################################
 # all
-zcat gencode.v47.annotation.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_all_gene_transcript_ids.tsv
+zcat gencode.v47.annotation.gtf.gz | awk '$3=="transcript"' | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_all_gene_transcript_ids.tsv
 # mRNA (protein coding)
-zcat gencode.v47.annotation.gtf.gz | awk '$3=="transcript"' | grep -Fw "transcript_type \"protein_coding\"" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_mRNA_gene_transcript_ids.tsv
+zcat gencode.v47.annotation.gtf.gz | awk '$3=="transcript"' | grep -Fw "transcript_type \"protein_coding\"" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_mRNA_gene_transcript_ids.tsv
 # lncRNA
-zcat gencode.v47.long_noncoding_RNAs.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_lncRNA_gene_transcript_ids.tsv
+zcat gencode.v47.long_noncoding_RNAs.gtf.gz | awk '$3=="transcript"' | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.v47_lncRNA_gene_transcript_ids.tsv
 
 # Gencode.vM36 annotation 
 ##########################################################################################
 # all
-zcat gencode.vM36.annotation.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_all_gene_transcript_ids.tsv
+zcat gencode.vM36.annotation.gtf.gz | awk '$3=="transcript"' | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_all_gene_transcript_ids.tsv
 # mRNA (protein coding)
-zcat gencode.vM36.annotation.gtf.gz | awk '$3=="transcript"' | grep -Fw "transcript_type \"protein_coding\"" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_mRNA_gene_transcript_ids.tsv
+zcat gencode.vM36.annotation.gtf.gz | awk '$3=="transcript"' | grep -Fw "transcript_type \"protein_coding\"" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_mRNA_gene_transcript_ids.tsv
 # lncRNA
-zcat gencode.vM36.long_noncoding_RNAs.gtf.gz | awk '$3=="transcript"' | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_lncRNA_gene_transcript_ids.tsv
+zcat gencode.vM36.long_noncoding_RNAs.gtf.gz | awk '$3=="transcript"' | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > gen.vM36_lncRNA_gene_transcript_ids.tsv
 
 # Ensembl.v104 annotation 
 ##########################################################################################
 # Reformat Ensembl.v104 annotation
-zcat ../../Source/Ensembl/Danio_rerio.GRCz11.104.chr.gtf.gz | ../../../Utils/skipcomments | sed 's/^/chr/' | sed 's/chrMT/chrM/g' | awk '$3=="transcript"' | sed 's/gene_biotype/gene_type/g' | sed 's/transcript_biotype/transcript_type/g' | ../../../Utils/gff2gff.pl - | gzip > Danio_rerio.GRCz11.104.chr_formatted.gtf.gz
+zcat Danio_rerio.GRCz11.104.chr.gtf.gz | ../../../Utils/skipcomments | sed 's/^/chr/' | sed 's/chrMT/chrM/g' | awk '$3=="transcript"' | sed 's/gene_biotype/gene_type/g' | sed 's/transcript_biotype/transcript_type/g' | ../../../Utils/gff2gff.pl - | gzip > Danio_rerio.GRCz11.104.chr_formatted.gtf.gz
 # all
-zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_all_gene_transcript_ids.tsv
+zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_all_gene_transcript_ids.tsv
 # Extract pc (mRNA)
-zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz | grep -Fw "transcript_type \"protein_coding\";" | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_mRNA_gene_transcript_ids.tsv
+zcat Danio_rerio.GRCz11.104.chr_formatted.gtf.gz | grep -Fw "transcript_type \"protein_coding\";" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_mRNA_gene_transcript_ids.tsv
 # Extract lncRNA
-zcat ../../lncRNA_catalogs/output/ensembl104_GRCz11_lncRNA.gtf.gz | grep -vFw "mRNA_end_NF" | grep -vFw "mRNA_start_NF" | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_lncRNA_gene_transcript_ids.tsv
+zcat Danio_rerio.GRCz11.104.chr.gtf.gz | awk '$3=="gene"' | grep -Ew "antisense|lincRNA|processed_transcript|sense_intronic|sense_overlapping" | ../../../Utils/extract.gtf.tags.sh - gene_id | grep "\S"  > ensembl104_GRCz11_lncRNA_gene.ids
+zcat Danio_rerio.GRCz11.104.chr.gtf.gz | grep -Fwf ensembl104_GRCz11_lncRNA_gene.ids | awk -F"\t" '{OFS=FS} $1="chr"$1' | sed 's/chrMT/chrM/g' | awk '$1 ~ /^chr[0-9XYM]{1,2}$/ {print $0}' | ../../../Utils/gff2gff.pl - | grep "\S" | gzip > ensembl104_GRCz11_lncRNA.gtf.gz
+zcat ensembl104_GRCz11_lncRNA.gtf.gz | ../../../Utils/extract.gtf.tags.sh - gene_id,transcript_id | sort | uniq | grep "\S" > ensembl.v104_lncRNA_gene_transcript_ids.tsv
 
 # Report completeness
 echo ">>> COMPLETADO!"
